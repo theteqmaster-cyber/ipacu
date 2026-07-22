@@ -1,0 +1,23 @@
+{
+  "name": "ipacu",
+  "version": "1.0.0",
+  "description": "pacman but with a twist",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "bugs": {
+    "url": "https://github.com/theteqmaster-cyber/ipacu/issues"
+  },
+  "homepage": "https://github.com/theteqmaster-cyber/ipacu#readme",
+  "dependencies": {
+    "firebase": "^12.16.0",
+    "phaser": "^4.2.1"
+  },
+  "devDependencies": {
+    "vite": "^8.1.5"
+  }
+}

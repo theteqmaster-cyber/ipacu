@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>IPACU // The Labyrinth of Dimension</title>
+  <meta name="description" content="An open-world story tactical game powered by Groq Llama 3.3 AI Demon Lord Puppet Master." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+
+  <!-- SVG Icon Definitions (No Emojis) -->
+  <svg style="display: none;">
+    <defs>
+      <g id="icon-shield">
+        <path d="M12 2L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-3zm0 4a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm0 14c-3.16-1.12-6-4.9-6-8.5V6.75l6-2 6 2V11.5c0 3.6-2.84 7.38-6 8.5z" fill="currentColor"/>
+      </g>
+      <g id="icon-camo">
+        <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zm0 12.5a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z" fill="currentColor"/>
+        <line x1="3" y1="21" x2="21" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </g>
+      <g id="icon-sonar">
+        <circle cx="12" cy="12" r="3" fill="currentColor"/>
+        <path d="M12 6a6 6 0 0 1 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M12 2a10 10 0 0 1 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M12 18a6 6 0 0 1-6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </g>
+      <g id="icon-trap-laser">
+        <rect x="2" y="2" width="20" height="20" rx="4" fill="none" stroke="currentColor" stroke-width="2"/>
+        <line x1="2" y1="12" x2="22" y2="12" stroke="currentColor" stroke-width="2.5" stroke-dasharray="3,2"/>
+        <circle cx="12" cy="12" r="4" fill="currentColor"/>
+      </g>
+      <g id="icon-trap-emp">
+        <polygon points="13,2 4,14 11,14 9,22 20,10 13,10" fill="currentColor"/>
+      </g>
+      <g id="icon-trap-gravity">
+        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/>
+        <circle cx="12" cy="12" r="5" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <circle cx="12" cy="12" r="2" fill="currentColor"/>
+      </g>
+      <g id="icon-trophy">
+        <path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94A5.01 5.01 0 0 0 11 15.9V19H7v2h10v-2h-4v-3.1c2.08-.47 3.69-2.22 3.96-4.41C19.33 11.12 21 9.27 21 7V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z" fill="currentColor"/>
+      </g>
+      <g id="icon-target">
+        <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/>
+        <line x1="12" y1="2" x2="12" y2="6" stroke="currentColor" stroke-width="2"/>
+        <line x1="12" y1="18" x2="12" y2="22" stroke="currentColor" stroke-width="2"/>
+        <line x1="2" y1="12" x2="6" y2="12" stroke="currentColor" stroke-width="2"/>
+        <line x1="18" y1="12" x2="22" y2="12" stroke="currentColor" stroke-width="2"/>
+        <circle cx="12" cy="12" r="2" fill="currentColor"/>
+      </g>
+      <g id="icon-play">
+        <polygon points="5,3 19,12 5,21" fill="currentColor"/>
+      </g>
+      <g id="icon-users">
+        <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" fill="currentColor"/>
+      </g>
+      <g id="icon-refresh">
+        <path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" fill="currentColor"/>
+      </g>
+      <g id="icon-close">
+        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"/>
+      </g>
+      <g id="icon-settings">
+        <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6-3.6 3.6z" fill="currentColor"/>
+      </g>
+      <g id="icon-crown">
+        <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z" fill="currentColor"/>
+      </g>
+      <g id="icon-eye">
+        <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zm0 12.5a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z" fill="currentColor"/>
+      </g>
+      <g id="icon-pause">
+        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/>
+      </g>
+      <g id="icon-skull">
+        <path d="M12 2C7.58 2 4 5.58 4 10c0 2.5 1.15 4.73 2.95 6.22V19c0 .55.45 1 1 1h8c.55 0 1-.45 1-1v-2.78C18.85 14.73 20 12.5 20 10c0-4.42-3.58-8-8-8zm-3 9a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm6 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm-5.5 5v-1h5v1h-5z" fill="currentColor"/>
+      </g>
+    </defs>
+  </svg>
+
+  <div id="bg-grid-container" class="bg-grid"></div>
+
+  <!-- Game Canvas Container (Full Responsive Viewport) -->
+  <div id="phaser-game"></div>
+
+  <!-- PHASE 1 & 2: CINEMATIC LOGO DRAWING & LOADING SPLASH SCREEN -->
+  <div id="splash-screen" class="screen-overlay active">
+    <div class="glass-card splash-card text-center">
+      <div class="logo-container">
+        <svg class="ipacu-logo-stroke" viewBox="0 0 200 60" width="200" height="60">
+          <text x="10" y="45" font-family="'Orbitron', sans-serif" font-size="42" font-weight="900" fill="none" stroke="#00f0ff" stroke-width="2" class="stroke-text">IPACU</text>
+        </svg>
+        <div class="glow-ring"></div>
+      </div>
+      <p id="fade-sub-title" class="subtitle fade-in-delayed">THE CLOSE-LET DIMENSION</p>
+      
+      <div id="loading-box" class="loading-box hidden">
+        <div class="loading-bar-wrapper">
+          <div id="loading-bar" class="loading-bar"></div>
+        </div>
+        <p id="loading-status" class="loading-status">AWAKENING GODDESS POWER...</p>
+      </div>
+
+      <button id="btn-next-to-speech" class="btn-cyber primary lg hidden" style="justify-content: center;">
+        <span>CONTINUE STORY</span>
+        <svg viewBox="0 0 24 24" width="20" height="20"><use href="#icon-play"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- PHASE 3: FATHER CHRIS'S SPEECH CARD -->
+  <div id="father-chris-speech" class="screen-overlay hidden">
+    <div class="glass-card modal-card lg text-center">
+      <div class="story-avatar">
+        <svg viewBox="0 0 24 24" width="48" height="48" color="#00f0ff"><use href="#icon-target"/></svg>
+      </div>
+      <h2 class="glitch-title" style="font-size: 1.8rem;">PLEA OF FATHER CHRIS</h2>
+      <div class="story-quote-box">
+        <p class="story-quote" id="speech-typewriter">
+          "Welcome hunter to ipacu, the close-let dimension. Save the saint and help free the residents who have been trapped in the labyrinth ipacu. Hunters are our only hope... save us hunters, and capture the 5 Lord Generals."
+        </p>
+        <span class="story-author">— Father Chris</span>
+      </div>
+
+      <button id="btn-next-to-dossier" class="btn-cyber primary lg" style="justify-content: center; margin-top: 16px;">
+        <span>READ ENTITY DOSSIER</span>
+        <svg viewBox="0 0 24 24" width="20" height="20"><use href="#icon-play"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- PHASE 4: ENTITY DOSSIER BRIEFING CARD -->
+  <div id="entity-dossier-screen" class="screen-overlay hidden">
+    <div class="glass-card modal-card lg text-center">
+      <h2 class="glitch-title" style="font-size: 1.6rem;">ENTITIES OF THE LABYRINTH</h2>
+      <p class="subtitle">KNOW YOUR ALLIES & ENEMIES</p>
+
+      <div class="lore-summary-grid">
+        <div class="lore-item">
+          <span class="lore-tag white">⚪ THE SAINT</span>
+          <p>Trapped in the Holy Church. Spawns Undead to assist the Hunter.</p>
+        </div>
+        <div class="lore-item">
+          <span class="lore-tag red">🔴 UNDEAD</span>
+          <p>Underlings of Lord Generals. Capture with traps for +250 XP.</p>
+        </div>
+        <div class="lore-item">
+          <span class="lore-tag blue">🔵 HUNTER (YOU)</span>
+          <p>Hero empowered by the Goddess. Defeat Generals & free Saints.</p>
+        </div>
+        <div class="lore-item">
+          <span class="lore-tag green">🟢 HIGH KNIGHTS</span>
+          <p>Lurks in Yellow Zones. Chases Hunter & drains -50 XP on contact!</p>
+        </div>
+        <div class="lore-item full-width">
+          <span class="lore-tag black">🖤 LORD GENERAL & DEMON LORD</span>
+          <p>Boss in Dark Void Layer. Requires 5 trap hits. Governed by Groq Llama 3.3 AI Puppet Master!</p>
+        </div>
+      </div>
+
+      <button id="btn-next-to-menu" class="btn-cyber primary lg" style="justify-content: center; margin-top: 16px;">
+        <span>ENTER MAIN HQ MENU</span>
+        <svg viewBox="0 0 24 24" width="20" height="20"><use href="#icon-play"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- PHASE 5: MAIN MENU & CAREER STATS -->
+  <div id="main-menu" class="screen-overlay hidden">
+    <div class="glass-card menu-card">
+      <header class="menu-header">
+        <div class="brand">
+          <svg class="brand-icon" viewBox="0 0 24 24" width="32" height="32"><use href="#icon-target"/></svg>
+          <div>
+            <h2>IPACU</h2>
+            <span class="badge-tag">STORY CAMPAIGN</span>
+          </div>
+        </div>
+
+        <div class="user-rank-pill">
+          <svg viewBox="0 0 24 24" width="18" height="18"><use href="#icon-trophy"/></svg>
+          <div class="rank-info">
+            <span id="player-rank-title" class="rank-name">ROOKIE TRACKER</span>
+            <span id="player-xp-val" class="rank-xp">0 XP</span>
+          </div>
+        </div>
+      </header>
+
+      <div class="menu-actions">
+        <button id="btn-play-solo" class="btn-cyber primary lg">
+          <svg viewBox="0 0 24 24" width="24" height="24"><use href="#icon-play"/></svg>
+          <div>
+            <div class="btn-title">ENTER THE LABYRINTH</div>
+            <div class="btn-sub">Battle the Groq AI Demon Lord & Hunt 5 Generals</div>
+          </div>
+        </button>
+
+        <button id="btn-play-multiplayer" class="btn-cyber secondary lg">
+          <svg viewBox="0 0 24 24" width="24" height="24"><use href="#icon-users"/></svg>
+          <div>
+            <div class="btn-title">MULTIPLAYER 1V1</div>
+            <div class="btn-sub">Hunter vs AI Puppet Master Live Lobby</div>
+          </div>
+        </button>
+
+        <div class="menu-grid-buttons">
+          <button id="btn-open-leaderboard" class="btn-cyber icon-btn">
+            <svg viewBox="0 0 24 24" width="22" height="22"><use href="#icon-trophy"/></svg>
+            <span>LEADERBOARD</span>
+          </button>
+
+          <button id="btn-open-achievements" class="btn-cyber icon-btn">
+            <svg viewBox="0 0 24 24" width="22" height="22"><use href="#icon-target"/></svg>
+            <span>BADGES</span>
+          </button>
+
+          <button id="btn-open-settings" class="btn-cyber icon-btn">
+            <svg viewBox="0 0 24 24" width="22" height="22"><use href="#icon-settings"/></svg>
+            <span>AUDIO & SFX</span>
+          </button>
+        </div>
+
+        <div class="controls-guide-pill glass-pill">
+          <div class="guide-item"><span class="key-badge">WASD</span> MOVE</div>
+          <div class="guide-item"><span class="key-badge">SPACE</span> TRAP</div>
+          <div class="guide-item"><span class="key-badge">1 - 3</span> SKILLS</div>
+        </div>
+      </div>
+
+      <footer class="menu-footer">
+        <div class="stat-pill">HIGHEST XP: <span id="stat-high-score">0</span></div>
+        <div class="stat-pill">GENERALS DEFEATED: <span id="stat-captures">0 / 5</span></div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- PHASE 6: WARP ENTERING LABYRINTH TRANSITION SPLASH -->
+  <div id="warp-transition-splash" class="screen-overlay hidden">
+    <div class="glass-card splash-card text-center warp-card">
+      <div class="glow-ring warp-ring"></div>
+      <h2 class="glitch-title" style="font-size: 2.2rem;">WARPING DIMENSIONS</h2>
+      <p class="subtitle" style="color: var(--magenta-glow);">ENTERING THE LABYRINTH OF IPACU...</p>
+      <div class="loading-bar-wrapper">
+        <div id="warp-progress-bar" class="loading-bar"></div>
+      </div>
+      <p id="warp-ai-status" class="loading-status">GROQ AI DEMON LORD INITIALIZING...</p>
+    </div>
+  </div>
+
+  <!-- PHASE 7: GAMEPLAY HUD WITH VIEWPORT EMPTY SPACE STATS -->
+  <div id="game-hud" class="hud-overlay hidden">
+    <!-- Top HUD Bar -->
+    <header class="hud-top-bar glass-pill">
+      <div class="hud-score-box">
+        <span class="hud-label">TOTAL XP</span>
+        <span id="hud-score-val" class="hud-val">000000</span>
+      </div>
+
+      <div class="hud-hp-box">
+        <div class="hp-label-row">
+          <span class="hud-label">LIFE FORCE</span>
+          <span id="hud-hp-val" class="hp-val-text">100 / 100 HP</span>
+        </div>
+        <div class="hp-bar-wrapper">
+          <div id="hud-hp-bar" class="hp-bar-fill" style="width: 100%;"></div>
+        </div>
+      </div>
+
+      <div class="hud-zone-box">
+        <span class="hud-label">CURRENT ZONE</span>
+        <span id="hud-zone-name" class="hud-val highlight-cyan">CENTRAL VIEWPORT</span>
+      </div>
+
+      <div class="hud-streak-box">
+        <svg viewBox="0 0 24 24" width="20" height="20"><use href="#icon-crown"/></svg>
+        <span id="hud-generals-left" class="hud-val highlight">5 GENERALS LEFT</span>
+      </div>
+
+      <div class="hud-deaths-box">
+        <span class="hud-label">DEATHS</span>
+        <span id="hud-death-count" class="hud-val highlight-red">0</span>
+      </div>
+
+      <button id="btn-pause-game" class="btn-hud-icon" title="Pause Game (ESC)">
+        <svg viewBox="0 0 24 24" width="20" height="20"><use href="#icon-pause"/></svg>
+      </button>
+    </header>
+
+    <!-- LIVE GROQ AI BROADCAST BOX (Floating in Empty Viewport Space) -->
+    <div class="groq-ai-broadcast-panel glass-card">
+      <div class="ai-header">
+        <svg viewBox="0 0 24 24" width="18" height="18" color="#ff0055"><use href="#icon-eye"/></svg>
+        <span>DEMON LORD PUPPET MASTER (GROQ AI)</span>
+      </div>
+      <p id="groq-ai-text" class="ai-text">"I AM OBSERVING YOUR EVERY STEP IN THE LABYRINTH, HUNTER..."</p>
+    </div>
+
+    <!-- TOUCHSCREEN MOBILE VIRTUAL D-PAD CONTROLLER -->
+    <div id="mobile-dpad" class="mobile-dpad-container glass-pill">
+      <button class="dpad-btn dpad-up" id="dpad-up">▲</button>
+      <div class="dpad-mid-row">
+        <button class="dpad-btn dpad-left" id="dpad-left">◄</button>
+        <button class="dpad-btn dpad-trap" id="dpad-trap">●</button>
+        <button class="dpad-btn dpad-right" id="dpad-right">►</button>
+      </div>
+      <button class="dpad-btn dpad-down" id="dpad-down">▼</button>
+    </div>
+
+    <!-- Bottom HUD Bar: Abilities & Traps -->
+    <footer class="hud-bottom-bar">
+      <div class="ability-group glass-pill">
+        <button id="skill-shield" class="ability-btn" title="Phase Shield (Immunity)">
+          <svg viewBox="0 0 24 24" width="22" height="22"><use href="#icon-shield"/></svg>
+          <span class="skill-key">1</span>
+          <div class="cooldown-overlay"></div>
+        </button>
+
+        <button id="skill-camo" class="ability-btn" title="Active Camo (Stealth)">
+          <svg viewBox="0 0 24 24" width="22" height="22"><use href="#icon-camo"/></svg>
+          <span class="skill-key">2</span>
+          <div class="cooldown-overlay"></div>
+        </button>
+
+        <button id="skill-sonar" class="ability-btn" title="Sonar Ping (Scan Wall)">
+          <svg viewBox="0 0 24 24" width="22" height="22"><use href="#icon-sonar"/></svg>
+          <span class="skill-key">3</span>
+          <div class="cooldown-overlay"></div>
+        </button>
+      </div>
+
+      <div class="trap-group glass-pill">
+        <span class="hud-label">TRAP DEPLOYMENT</span>
+        <div class="trap-items">
+          <button id="trap-laser" class="trap-btn active" data-type="laser">
+            <svg viewBox="0 0 24 24" width="22" height="22"><use href="#icon-trap-laser"/></svg>
+            <span class="trap-count" id="count-trap-laser">∞</span>
+          </button>
+          <button id="trap-emp" class="trap-btn" data-type="emp">
+            <svg viewBox="0 0 24 24" width="22" height="22"><use href="#icon-trap-emp"/></svg>
+            <span class="trap-count" id="count-trap-emp">3</span>
+          </button>
+          <button id="trap-gravity" class="trap-btn" data-type="gravity">
+            <svg viewBox="0 0 24 24" width="22" height="22"><use href="#icon-trap-gravity"/></svg>
+            <span class="trap-count" id="count-trap-gravity">2</span>
+          </button>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- MATCH SUMMARY MODAL -->
+  <div id="match-summary-modal" class="screen-overlay hidden">
+    <div class="glass-card modal-card text-center">
+      <div class="modal-badge-icon victory" id="summary-status-icon">
+        <svg viewBox="0 0 24 24" width="48" height="48"><use href="#icon-crown"/></svg>
+      </div>
+      <h2 id="summary-title" class="glitch-title">LORD GENERAL DEFEATED!</h2>
+      <p id="summary-subtitle" class="subtitle">SAINT FREED FROM THE LABYRINTH</p>
+
+      <div class="summary-stats-grid">
+        <div class="summary-stat">
+          <span class="stat-label">CAMPAIGN XP</span>
+          <span id="summary-score" class="stat-number">8,500</span>
+        </div>
+        <div class="summary-stat">
+          <span class="stat-label">ELAPSED TIME</span>
+          <span id="summary-time" class="stat-number">02:14</span>
+        </div>
+        <div class="summary-stat">
+          <span class="stat-label">TRAPS SPRUNG</span>
+          <span id="summary-traps" class="stat-number">6</span>
+        </div>
+        <div class="summary-stat">
+          <span class="stat-label">XP EARNED</span>
+          <span id="summary-xp" class="stat-number highlight">+500 XP</span>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button id="btn-retry-match" class="btn-cyber primary">
+          <svg viewBox="0 0 24 24" width="20" height="20"><use href="#icon-refresh"/></svg>
+          <span>HUNT NEXT LORD GENERAL</span>
+        </button>
+        <button id="btn-return-menu" class="btn-cyber secondary">
+          <span>MAIN MENU</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEADERBOARD MODAL -->
+  <div id="leaderboard-modal" class="screen-overlay hidden">
+    <div class="glass-card modal-card lg">
+      <header class="modal-header">
+        <div class="modal-title">
+          <svg viewBox="0 0 24 24" width="28" height="28"><use href="#icon-trophy"/></svg>
+          <h3>GLOBAL LEADERBOARD</h3>
+        </div>
+        <button id="btn-close-leaderboard" class="btn-close">
+          <svg viewBox="0 0 24 24" width="20" height="20"><use href="#icon-close"/></svg>
+        </button>
+      </header>
+
+      <div class="leaderboard-tabs">
+        <button class="tab-btn active" data-tab="local">LOCAL RECORDS</button>
+        <button class="tab-btn" data-tab="global">GLOBAL TOP 10</button>
+      </div>
+
+      <div class="leaderboard-list" id="leaderboard-container"></div>
+    </div>
+  </div>
+
+  <!-- ACHIEVEMENTS BADGES MODAL -->
+  <div id="achievements-modal" class="screen-overlay hidden">
+    <div class="glass-card modal-card lg">
+      <header class="modal-header">
+        <div class="modal-title">
+          <svg viewBox="0 0 24 24" width="28" height="28"><use href="#icon-target"/></svg>
+          <h3>HUNTER BADGES</h3>
+        </div>
+        <button id="btn-close-achievements" class="btn-close">
+          <svg viewBox="0 0 24 24" width="20" height="20"><use href="#icon-close"/></svg>
+        </button>
+      </header>
+
+      <div class="badges-grid" id="badges-container"></div>
+    </div>
+  </div>
+
+  <!-- MULTIPLAYER LOBBY MODAL -->
+  <div id="multiplayer-modal" class="screen-overlay hidden">
+    <div class="glass-card modal-card">
+      <header class="modal-header">
+        <div class="modal-title">
+          <svg viewBox="0 0 24 24" width="28" height="28"><use href="#icon-users"/></svg>
+          <h3>MULTIPLAYER LOBBY</h3>
+        </div>
+        <button id="btn-close-multiplayer" class="btn-close">
+          <svg viewBox="0 0 24 24" width="20" height="20"><use href="#icon-close"/></svg>
+        </button>
+      </header>
+
+      <div class="lobby-box">
+        <p class="subtitle">HUNTER VS GROQ AI DEMON LORD LOBBY</p>
+        <div class="lobby-inputs">
+          <input type="text" id="room-code-input" class="cyber-input" placeholder="ENTER 4-DIGIT ROOM CODE" maxlength="4" />
+          <button id="btn-join-room" class="btn-cyber secondary">JOIN MATCH</button>
+        </div>
+        <div class="divider">OR</div>
+        <button id="btn-create-room" class="btn-cyber primary">CREATE HOST ROOM</button>
+        <div id="lobby-status" class="lobby-status-text">DISCONNECTED FROM FIREBASE CLOUD</div>
+      </div>
+  <!-- PAUSE GAME MODAL -->
+  <div id="pause-modal" class="screen-overlay hidden">
+    <div class="glass-card modal-card text-center pause-card">
+      <div class="pause-icon-box">
+        <svg viewBox="0 0 24 24" width="48" height="48"><use href="#icon-pause"/></svg>
+      </div>
+      <h2 class="glitch-title" style="font-size: 2.2rem;">MISSION PAUSED</h2>
+      <p class="subtitle" style="color: var(--cyan-glow);">HUNTER OPERATIONS TEMPORARILY SUSPENDED</p>
+
+      <div class="pause-actions" style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px;">
+        <button id="btn-resume-game" class="btn-cyber primary lg" style="justify-content: center;">
+          <svg viewBox="0 0 24 24" width="20" height="20"><use href="#icon-play"/></svg>
+          <span>RESUME MISSION</span>
+        </button>
+        <button id="btn-toggle-audio" class="btn-cyber secondary lg" style="justify-content: center;">
+          <svg viewBox="0 0 24 24" width="20" height="20"><use href="#icon-settings"/></svg>
+          <span id="pause-audio-label">TOGGLE AUDIO SFX</span>
+        </button>
+        <button id="btn-quit-match" class="btn-cyber lg" style="justify-content: center; background: rgba(255, 0, 85, 0.15); border-color: var(--magenta-glow);">
+          <svg viewBox="0 0 24 24" width="20" height="20"><use href="#icon-close"/></svg>
+          <span>ABORT & EXIT TO MAIN HQ</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MINECRAFT VIBES HERO DEATH MODAL -->
+  <div id="hero-death-modal" class="screen-overlay minecraft-death-overlay hidden">
+    <div class="minecraft-death-card text-center">
+      <h1 class="minecraft-death-title">You died!</h1>
+      <p id="minecraft-death-msg" class="minecraft-death-msg">Hero was killed by High Knight</p>
+      
+      <div class="minecraft-death-stats">
+        <span id="minecraft-death-count-text">Total Hero Deaths: 1</span>
+      </div>
+
+      <div class="minecraft-actions">
+        <button id="btn-respawn-hero" class="minecraft-btn primary">
+          Respawn
+        </button>
+        <button id="btn-death-title-menu" class="minecraft-btn secondary">
+          Title Screen
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
