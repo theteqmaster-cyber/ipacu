@@ -1,7 +1,7 @@
 FROM php:8.3-fpm-alpine
 
 # Install Nginx and required dependencies
-RUN apk add --no-bezier --no-cache nginx curl libpng-dev libjpeg-turbo-dev freetype-dev
+RUN apk add --no-cache nginx curl libpng-dev libjpeg-turbo-dev freetype-dev
 
 # Configure Nginx
 COPY nginx.conf /etc/nginx/nginx.conf
