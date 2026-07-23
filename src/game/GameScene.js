@@ -773,8 +773,7 @@ export class GameScene extends Phaser.Scene {
       this.tweens.add({ targets: pop, y: this.lordGeneral.y - 60, alpha: 0, duration: 1200, onComplete: () => pop.destroy() });
 
       if (this.lordGeneralHp <= 0) {
-        this.generalsDefeated += 1;
-        this.finishMatch(true);
+        this.handleGeneralDefeated();
       }
     } else {
       this.takeDamage(50, "Hero was slain by Lord General");
@@ -809,9 +808,71 @@ export class GameScene extends Phaser.Scene {
     this.spawnHighKnight(this.lordGeneral.x, this.lordGeneral.y);
 
     if (this.lordGeneralHp <= 0) {
-      this.generalsDefeated += 1;
-      this.finishMatch(true);
+      this.handleGeneralDefeated();
     }
+  }
+
+  handleGeneralDefeated() {
+    this.generalsDefeated += 1;
+    this.score += 1500;
+    sound.playCaptureTriumph();
+
+    if (this.generalsDefeated < 5) {
+      // Spawn Next Lord General in Boss Chamber
+      this.lordGeneralHp = 8;
+      const bgx = 65 * this.tileSize;
+      const bgy = 45 * this.tileSize;
+      this.lordGeneral.setPosition(bgx, bgy);
+
+      const toast = this.add.text(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y - 120, `⚔️ LORD GENERAL ${this.generalsDefeated} OF 5 SLAIN!\nLORD GENERAL ${this.generalsDefeated + 1} HAS SPAWNED IN DARK VOID!`, {
+        fontFamily: 'Orbitron, sans-serif',
+        fontSize: '15px',
+        color: '#00ff88',
+        fontStyle: 'bold',
+        align: 'center',
+        backgroundColor: 'rgba(5, 25, 15, 0.9)',
+        padding: { x: 14, y: 8 }
+      }).setOrigin(0.5);
+      this.tweens.add({ targets: toast, y: this.cameras.main.midPoint.y - 160, alpha: 0, duration: 3200, onComplete: () => toast.destroy() });
+
+      // Respawn boss chamber guards
+      this.spawnHighKnight(63 * this.tileSize, 45 * this.tileSize, true);
+      this.spawnHighKnight(67 * this.tileSize, 45 * this.tileSize, true);
+    } else {
+      // ALL 5 LORD GENERALS SLAIN -> TRIGGER FATHER CHRIS PLOT TWIST BETRAYAL!
+      this.triggerFatherChrisPlotTwist();
+    }
+  }
+
+  triggerFatherChrisPlotTwist() {
+    this.isMatchActive = false;
+    this.cameras.main.shake(500, 0.03);
+
+    const banner = this.add.text(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y - 40, `ALL 5 LORD GENERALS SLAIN!\nSAINT RESCUED FROM IPACU!`, {
+      fontFamily: 'Orbitron, sans-serif',
+      fontSize: '22px',
+      color: '#00ff88',
+      fontStyle: 'bold',
+      align: 'center'
+    }).setOrigin(0.5);
+
+    this.time.delayedCall(1200, () => {
+      banner.destroy();
+      const popTwist = this.add.text(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y - 40, `FATHER CHRIS: "The hero rescued the saint, hero our only hope.......\nJUST KIDDING, DIE!"`, {
+        fontFamily: 'Orbitron, sans-serif',
+        fontSize: '16px',
+        color: '#ff0055',
+        fontStyle: 'bold',
+        align: 'center',
+        backgroundColor: 'rgba(30, 0, 10, 0.95)',
+        padding: { x: 16, y: 10 }
+      }).setOrigin(0.5);
+
+      this.time.delayedCall(2800, () => {
+        popTwist.destroy();
+        this.triggerHeroDeath("Hero was killed by Father Chris");
+      });
+    });
   }
 
   updateMiniMap() {
@@ -882,6 +943,61 @@ export class GameScene extends Phaser.Scene {
       ctx.arc((this.player.x / mapW) * w, (this.player.y / mapH) * h, 3.5, 0, Math.PI * 2);
       ctx.fill();
     }
+  }
+
+  activateSonar() {
+    if (this.sonarCooldown || !this.isMatchActive) return;
+    this.sonarCooldown = true;
+
+    sound.playSonar();
+    const wave = this.add.circle(this.player.x, this.player.y, 10, 0x00f0ff, 0);
+    wave.setStrokeStyle(2, 0x00f0ff, 1);
+
+    // After Church Corruption: Kills 3 High Knights at once! Normal mode kills 1 High Knight.
+    let destroyedKnights = 0;
+    let destroyedUndead = 0;
+    const maxKillKnights = this.isChurchCorrupted ? 3 : 1;
+
+    const nearbyKnights = this.highKnights.filter(hk => hk.active && Phaser.Math.Distance.Between(this.player.x, this.player.y, hk.x, hk.y) <= 400);
+    const toKillK = nearbyKnights.slice(0, maxKillKnights);
+    toKillK.forEach(targetK => {
+      targetK.active = false;
+      targetK.destroy();
+      destroyedKnights++;
+    });
+
+    const nearbyUndead = this.undeadList.filter(u => u.active && !u.isCaptured && Phaser.Math.Distance.Between(this.player.x, this.player.y, u.x, u.y) <= 400);
+    const toDestroyU = nearbyUndead.slice(0, 2);
+    toDestroyU.forEach(u => {
+      u.isCaptured = true;
+      u.active = false;
+      u.destroy();
+      destroyedUndead++;
+    });
+
+    const popText = this.isChurchCorrupted
+      ? `[SONAR OVERPOWERED: ${destroyedKnights} KNIGHTS & ${destroyedUndead} UNDEAD DESTROYED!]`
+      : `[SONAR BLAST: ${destroyedKnights} KNIGHT & ${destroyedUndead} UNDEAD DESTROYED!]`;
+
+    const pop = this.add.text(this.player.x, this.player.y - 45, popText, {
+      fontFamily: 'Orbitron, sans-serif',
+      fontSize: '12px',
+      color: '#00f0ff',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+    this.tweens.add({ targets: pop, y: this.player.y - 80, alpha: 0, duration: 1600, onComplete: () => pop.destroy() });
+
+    this.tweens.add({
+      targets: wave,
+      radius: 400,
+      alpha: 0,
+      duration: 800,
+      onComplete: () => wave.destroy()
+    });
+
+    this.time.delayedCall(8000, () => {
+      this.sonarCooldown = false;
+    });
   }
 
   triggerHeroDeath(cause) {
