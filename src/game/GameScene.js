@@ -117,21 +117,38 @@ export class GameScene extends Phaser.Scene {
 
     // Match Timer & Saint Continuous Spawning Engine (Spawns more as game progresses)
     this.isChurchCorrupted = false;
+    this.isBossPressuredToChurch = false;
+
     this.time.addEvent({
       delay: 1000,
       callback: () => {
         if (!this.isMatchActive) return;
         this.timeElapsed += 1;
 
-        // Check if Lord General has entered Holy Church zone or game duration exceeds 60s
+        // At 2 minutes (120s), Lord General decides to target the Holy Church as his trump card!
+        if (this.timeElapsed >= 120 && !this.isBossPressuredToChurch) {
+          this.isBossPressuredToChurch = true;
+          const toast = this.add.text(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y - 140, '⚡ 2 MINUTES ELAPSED: DEMON LORD MARCHING TO CORRUPT THE SAINT!', {
+            fontFamily: 'Orbitron, sans-serif',
+            fontSize: '14px',
+            color: '#a855f7',
+            fontStyle: 'bold',
+            align: 'center',
+            backgroundColor: 'rgba(25, 5, 20, 0.9)',
+            padding: { x: 14, y: 8 }
+          }).setOrigin(0.5);
+          this.tweens.add({ targets: toast, y: this.cameras.main.midPoint.y - 170, alpha: 0, duration: 3500, onComplete: () => toast.destroy() });
+        }
+
+        // Check if Lord General has entered Holy Church zone -> Triggers Church Corruption!
         if (this.lordGeneral && this.lordGeneral.active) {
           const bgc = Math.floor(this.lordGeneral.x / this.tileSize);
           const bgr = Math.floor(this.lordGeneral.y / this.tileSize);
           const inChurch = (bgc >= 5 && bgc <= 24 && bgr >= 35 && bgr <= 55);
 
-          if ((inChurch || this.timeElapsed >= 60) && !this.isChurchCorrupted) {
+          if (inChurch && !this.isChurchCorrupted) {
             this.isChurchCorrupted = true;
-            const toast = this.add.text(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y - 140, '⚠️ WARNING: LORD GENERAL CORRUPTING HOLY CHURCH!\nSAINT SPAWNING HIGH KNIGHT PAIRS EVERY 3s!', {
+            const toast = this.add.text(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y - 140, '⚠️ WARNING: LORD GENERAL HAS CORRUPTED THE HOLY CHURCH!\nSAINT SPAWNING HIGH KNIGHT PAIRS EVERY 3s!', {
               fontFamily: 'Orbitron, sans-serif',
               fontSize: '15px',
               color: '#ff0055',
@@ -140,7 +157,7 @@ export class GameScene extends Phaser.Scene {
               backgroundColor: 'rgba(25, 5, 10, 0.9)',
               padding: { x: 14, y: 8 }
             }).setOrigin(0.5);
-            this.tweens.add({ targets: toast, y: this.cameras.main.midPoint.y - 170, alpha: 0, duration: 3500, onComplete: () => toast.destroy() });
+            this.tweens.add({ targets: toast, y: this.cameras.main.midPoint.y - 170, alpha: 0, duration: 4000, onComplete: () => toast.destroy() });
           }
         }
 
@@ -531,33 +548,60 @@ export class GameScene extends Phaser.Scene {
     // 4.5. Lord General Tactical AI: Long-Range Hero Detection & Dynamic Map Roaming
     if (this.lordGeneral && this.lordGeneral.active) {
       const distToHero = Phaser.Math.Distance.Between(this.lordGeneral.x, this.lordGeneral.y, this.player.x, this.player.y);
-      const bossSpeed = Math.min(265, 215 + Math.floor(this.timeElapsed / 10) * 5);
+      const churchX = 14 * this.tileSize;
+      const churchY = 45 * this.tileSize;
+      const distToChurch = Phaser.Math.Distance.Between(this.lordGeneral.x, this.lordGeneral.y, churchX, churchY);
+      let bossSpeed = Math.min(265, 215 + Math.floor(this.timeElapsed / 10) * 5);
 
-      if (distToHero < 600 && !this.isCamoActive) {
+      // If pressured by Hunter attacks OR 2-minute mark hit, boss marches directly to Holy Church to corrupt the Saint!
+      if ((this.isBossPressuredToChurch || this.timeElapsed >= 120) && !this.isChurchCorrupted) {
+        bossSpeed = 275;
+        if (distToChurch > 35) {
+          const moveAngle = Phaser.Math.Angle.Between(this.lordGeneral.x, this.lordGeneral.y, churchX, churchY);
+          this.lordGeneral.body.setVelocity(Math.cos(moveAngle) * bossSpeed, Math.sin(moveAngle) * bossSpeed);
+        } else {
+          this.lordGeneral.body.setVelocity(0);
+        }
+      } else if (distToHero < 600 && !this.isCamoActive) {
         // Detects Hero from afar! If Hero gets close (<320px), flees tactically away
         if (distToHero < 320) {
           const runAngle = Phaser.Math.Angle.Between(this.player.x, this.lordGeneral.x, this.player.y, this.lordGeneral.y);
           this.lordGeneral.body.setVelocity(Math.cos(runAngle) * bossSpeed, Math.sin(runAngle) * bossSpeed);
         } else {
           // Tactical positioning: Flanks toward open zone or Holy Church
-          const churchX = 14 * this.tileSize;
-          const churchY = 45 * this.tileSize;
           const angleToChurch = Phaser.Math.Angle.Between(this.lordGeneral.x, this.lordGeneral.y, churchX, churchY);
           this.lordGeneral.body.setVelocity(Math.cos(angleToChurch) * (bossSpeed * 0.8), Math.sin(angleToChurch) * (bossSpeed * 0.8));
         }
       } else {
-        // Long-range roaming: Lord General moves toward Holy Church to corrupt the Saint!
-        const churchX = 14 * this.tileSize;
-        const churchY = 45 * this.tileSize;
-        const distToChurch = Phaser.Math.Distance.Between(this.lordGeneral.x, this.lordGeneral.y, churchX, churchY);
+        // Long-range roaming: Lord General moves toward Holy Church
         if (distToChurch > 40) {
           const moveAngle = Phaser.Math.Angle.Between(this.lordGeneral.x, this.lordGeneral.y, churchX, churchY);
-          this.lordGeneral.body.setVelocity(Math.cos(moveAngle) * 140, Math.sin(moveAngle) * 140);
+          this.lordGeneral.body.setVelocity(Math.cos(moveAngle) * 145, Math.sin(moveAngle) * 145);
         } else {
           this.lordGeneral.body.setVelocity(0);
         }
       }
     }
+
+    // 5. Check Trap Collisions
+    this.traps.forEach(trap => {
+      if (!trap.active) return;
+      this.undeadList.forEach(u => {
+        if (!u.isCaptured && !u.isStunned) {
+          if (Phaser.Math.Distance.Between(trap.x, trap.y, u.x, u.y) < 28) {
+            this.triggerTrap(trap, u);
+          }
+        }
+      });
+      if (this.lordGeneral && this.lordGeneral.active) {
+        if (Phaser.Math.Distance.Between(trap.x, trap.y, this.lordGeneral.x, this.lordGeneral.y) < 32) {
+          this.triggerBossTrap(trap);
+        }
+      }
+    });
+
+    // 6. Update Mini-Map Radar Canvas
+    this.updateMiniMap();
 
     // 5. Check Trap Collisions
     this.traps.forEach(trap => {
@@ -715,6 +759,8 @@ export class GameScene extends Phaser.Scene {
       this.lordGeneralHp -= 1;
       sound.playCaptureTriumph();
 
+      this.isBossPressuredToChurch = true;
+
       const pop = this.add.text(this.lordGeneral.x, this.lordGeneral.y - 30, `BOSS STRUCK BY SHIELD! (${this.lordGeneralHp}/8 HP)`, {
         fontFamily: 'Orbitron, sans-serif',
         fontSize: '14px',
@@ -740,6 +786,9 @@ export class GameScene extends Phaser.Scene {
     this.lordGeneralHp -= 1;
     sound.playCaptureTriumph();
 
+    // Pressure reaction: Boss panics and rushes to corrupt the Saint faster!
+    this.isBossPressuredToChurch = true;
+
     const pop = this.add.text(this.lordGeneral.x, this.lordGeneral.y - 30, `LORD GENERAL TRAPPED! (${this.lordGeneralHp}/8 HP)`, {
       fontFamily: 'Orbitron, sans-serif',
       fontSize: '14px',
@@ -759,6 +808,76 @@ export class GameScene extends Phaser.Scene {
     if (this.lordGeneralHp <= 0) {
       this.generalsDefeated += 1;
       this.finishMatch(true);
+    }
+  }
+
+  updateMiniMap() {
+    const canvas = document.getElementById('minimap-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const w = canvas.width;
+    const h = canvas.height;
+    const mapW = this.worldWidthTiles * this.tileSize; // 3200
+    const mapH = this.worldHeightTiles * this.tileSize; // 2400
+
+    ctx.clearRect(0, 0, w, h);
+
+    // Draw background radar grid
+    ctx.fillStyle = '#070a11';
+    ctx.fillRect(0, 0, w, h);
+
+    // Draw Holy Church Zone (MinC 5..24, MinR 35..55)
+    ctx.strokeStyle = this.isChurchCorrupted ? 'rgba(255, 0, 85, 0.7)' : 'rgba(255, 255, 255, 0.4)';
+    ctx.strokeRect((5 * 40 / mapW) * w, (35 * 40 / mapH) * h, (19 * 40 / mapW) * w, (20 * 40 / mapH) * h);
+
+    // Draw Dark Void Zone (MinC 56..75, MinR 35..55)
+    ctx.strokeStyle = 'rgba(168, 85, 247, 0.4)';
+    ctx.strokeRect((56 * 40 / mapW) * w, (35 * 40 / mapH) * h, (19 * 40 / mapW) * w, (20 * 40 / mapH) * h);
+
+    // Draw Undead specters (Red dots)
+    ctx.fillStyle = '#ff0055';
+    this.undeadList.forEach(u => {
+      if (u.active && !u.isCaptured) {
+        ctx.beginPath();
+        ctx.arc((u.x / mapW) * w, (u.y / mapH) * h, 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
+
+    // Draw High Knights (Green dots)
+    ctx.fillStyle = '#00ff88';
+    this.highKnights.forEach(hk => {
+      if (hk.active) {
+        ctx.beginPath();
+        ctx.arc((hk.x / mapW) * w, (hk.y / mapH) * h, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
+
+    // Draw Saint (White glowing dot)
+    if (this.saint && this.saint.active) {
+      ctx.fillStyle = this.isChurchCorrupted ? '#ff0055' : '#ffffff';
+      ctx.beginPath();
+      ctx.arc((this.saint.x / mapW) * w, (this.saint.y / mapH) * h, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Draw Lord General (Purple dot)
+    if (this.lordGeneral && this.lordGeneral.active) {
+      ctx.fillStyle = '#a855f7';
+      ctx.beginPath();
+      ctx.arc((this.lordGeneral.x / mapW) * w, (this.lordGeneral.y / mapH) * h, 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Draw Hunter (Player - Cyan dot)
+    if (this.player && this.player.active) {
+      ctx.fillStyle = '#00f0ff';
+      ctx.beginPath();
+      ctx.arc((this.player.x / mapW) * w, (this.player.y / mapH) * h, 3.5, 0, Math.PI * 2);
+      ctx.fill();
     }
   }
 
