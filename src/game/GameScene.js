@@ -115,12 +115,28 @@ export class GameScene extends Phaser.Scene {
       this.targetMovePoint = { x: worldPoint.x, y: worldPoint.y };
     });
 
-    // Timer
+    // Match Timer & Saint Continuous Spawning Engine (Spawns more as game progresses)
     this.time.addEvent({
       delay: 1000,
       callback: () => {
-        if (this.isMatchActive) {
-          this.timeElapsed += 1;
+        if (!this.isMatchActive) return;
+        this.timeElapsed += 1;
+
+        // 1. Saint Power: Spawns Undead every 6 seconds (progressively faster)
+        if (this.timeElapsed % Math.max(3, 6 - Math.floor(this.timeElapsed / 25)) === 0) {
+          this.spawnSaintUndead();
+        }
+
+        // 2. Lord General Fleeing Minion Timer: Spawns 1 High Knight every 10 seconds
+        if (this.timeElapsed % 10 === 0 && this.lordGeneral && this.lordGeneral.active) {
+          this.spawnHighKnight(this.lordGeneral.x + (Math.random() > 0.5 ? 40 : -40), this.lordGeneral.y + (Math.random() > 0.5 ? 40 : -40));
+          const pop = this.add.text(this.lordGeneral.x, this.lordGeneral.y - 45, '[LORD GENERAL: REINFORCEMENT SPAWNED!]', {
+            fontFamily: 'Orbitron, sans-serif',
+            fontSize: '11px',
+            color: '#ff0055',
+            fontStyle: 'bold'
+          }).setOrigin(0.5);
+          this.tweens.add({ targets: pop, y: this.lordGeneral.y - 70, alpha: 0, duration: 1400, onComplete: () => pop.destroy() });
         }
       },
       loop: true
@@ -212,20 +228,25 @@ export class GameScene extends Phaser.Scene {
   }
 
   spawnStoryEntities() {
-    // 1. Spawn Saint ⚪ in Holy Church (Brown/White Zone)
+    // 1. Spawn Saint ⚪ in Holy Church
     const saintX = 14 * this.tileSize;
     const saintY = 45 * this.tileSize;
 
     this.saint = this.add.container(saintX, saintY);
-    const saintGlow = this.add.circle(0, 0, 18, 0xffffff, 0.35);
-    const saintCore = this.add.circle(0, 0, 10, 0xffffff, 0.95);
+    const saintGlow = this.add.circle(0, 0, 22, 0xffffff, 0.4);
+    const saintCore = this.add.circle(0, 0, 12, 0xffffff, 0.95);
     saintCore.setStrokeStyle(2, 0x00f0ff, 0.9);
+    const saintLabel = this.add.text(0, -28, 'SAINT', {
+      fontFamily: 'Orbitron, sans-serif',
+      fontSize: '10px',
+      color: '#ffffff',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
 
-    this.saint.add([saintGlow, saintCore]);
+    this.saint.add([saintGlow, saintCore, saintLabel]);
     this.physics.add.existing(this.saint);
     this.saint.body.setCircle(14, -14, -14);
 
-    // Saint pulse animation
     this.tweens.add({
       targets: saintGlow,
       scale: 1.3,
@@ -234,40 +255,26 @@ export class GameScene extends Phaser.Scene {
       duration: 1000
     });
 
-    // 2. Spawn 6 Undead 🔴
+    // 2. Initial Undead List 🔴
     const undeadSpawns = [
-      { c: 30, r: 25 }, { c: 50, r: 25 }, { c: 35, r: 35 },
-      { c: 45, r: 35 }, { c: 60, r: 15 }, { c: 65, r: 15 }
+      { c: 30, r: 25 }, { c: 32, r: 25 }, { c: 34, r: 25 }, // Pair/Railway 1
+      { c: 50, r: 25 }, { c: 52, r: 25 }, // Pair/Railway 2
+      { c: 35, r: 35 }, { c: 37, r: 35 }  // Pair/Railway 3
     ];
 
-    undeadSpawns.forEach(sp => {
-      const u = this.add.container(sp.c * this.tileSize, sp.r * this.tileSize);
-      const aura = this.add.circle(0, 0, 14, 0xff0055, 0.3);
-      const core = this.add.circle(0, 0, 8, 0xff0055, 0.95);
-      core.setStrokeStyle(2, 0xffb800, 0.8);
-      u.add([aura, core]);
-
-      this.physics.add.existing(u);
-      u.body.setCircle(12, -12, -12);
-      this.physics.add.collider(u, this.walls);
-
-      u.isCaptured = false;
-      u.isStunned = false;
-      u.moveTimer = 0;
-      this.undeadList.push(u);
-
-      this.physics.add.overlap(this.player, u, () => this.handleHunterUndeadContact(u));
-    });
+    undeadSpawns.forEach(sp => this.spawnSingleUndead(sp.c * this.tileSize, sp.r * this.tileSize));
 
     // 3. Spawn High Knights 🟢
-    // Yellow Lair (2), Holy Church (5 - Saint heavily guarded!), Boss Chamber (2 - Guarding Boss)
+    // Holy Church Guards (5), Yellow Lair (2), Lord General Boss Chamber Guards (3)
     const knightSpawns = [
       { c: 12, r: 12 }, { c: 18, r: 18 }, // Yellow Lair
       { c: 8, r: 38 }, { c: 20, r: 38 }, { c: 8, r: 52 }, { c: 20, r: 52 }, { c: 14, r: 40 }, // Holy Church Guards (5)
-      { c: 58, r: 40 }, { c: 72, r: 48 } // Dark Void Boss Guards (2)
+      // LORD GENERAL 3 GUARDS: 2 Adjacent to Boss, 1 at Dark Void Chamber Door
+      { c: 63, r: 45, isBossGuard: true }, { c: 67, r: 45, isBossGuard: true }, // 2 Adjacent to Lord General
+      { c: 56, r: 45, isBossGuard: true } // 1 Guarding Chamber Door
     ];
-    this.initialKnightSpawns = knightSpawns.map(sp => ({ x: sp.c * this.tileSize, y: sp.r * this.tileSize }));
-    knightSpawns.forEach(sp => this.spawnHighKnight(sp.c * this.tileSize, sp.r * this.tileSize));
+    this.initialKnightSpawns = knightSpawns.map(sp => ({ x: sp.c * this.tileSize, y: sp.r * this.tileSize, isBossGuard: sp.isBossGuard }));
+    knightSpawns.forEach(sp => this.spawnHighKnight(sp.c * this.tileSize, sp.r * this.tileSize, sp.isBossGuard));
 
     // 4. Spawn Lord General Boss 🖤 in Dark Void Layer
     const bgx = 65 * this.tileSize;
@@ -286,10 +293,57 @@ export class GameScene extends Phaser.Scene {
     this.physics.add.overlap(this.player, this.lordGeneral, () => this.handleHunterGeneralContact());
   }
 
-  spawnHighKnight(x, y) {
+  spawnSingleUndead(x, y) {
+    const u = this.add.container(x, y);
+    const aura = this.add.circle(0, 0, 14, 0xff0055, 0.3);
+    const core = this.add.circle(0, 0, 8, 0xff0055, 0.95);
+    core.setStrokeStyle(2, 0xffb800, 0.8);
+    u.add([aura, core]);
+
+    this.physics.add.existing(u);
+    u.body.setCircle(12, -12, -12);
+    this.physics.add.collider(u, this.walls);
+
+    u.isCaptured = false;
+    u.isStunned = false;
+    u.moveTimer = 0;
+    u.roamAngle = Math.random() * Math.PI * 2;
+    this.undeadList.push(u);
+
+    this.physics.add.overlap(this.player, u, () => this.handleHunterUndeadContact(u));
+  }
+
+  spawnSaintUndead() {
+    if (!this.saint || !this.isMatchActive) return;
+    const spawnX = this.saint.x + (Math.random() - 0.5) * 80;
+    const spawnY = this.saint.y + (Math.random() - 0.5) * 80;
+
+    this.spawnSingleUndead(spawnX, spawnY);
+
+    // 15% Chance for Saint to spawn a High Knight guard in Holy Church
+    if (Math.random() < 0.15) {
+      this.spawnHighKnight(spawnX + 20, spawnY + 20, false);
+      const pop = this.add.text(this.saint.x, this.saint.y - 45, '[SAINT POWER: HIGH KNIGHT BORN!]', {
+        fontFamily: 'Orbitron, sans-serif',
+        fontSize: '11px',
+        color: '#00ff88',
+        fontStyle: 'bold'
+      }).setOrigin(0.5);
+      this.tweens.add({ targets: pop, y: this.saint.y - 70, alpha: 0, duration: 1500, onComplete: () => pop.destroy() });
+    } else {
+      const pop = this.add.text(this.saint.x, this.saint.y - 40, '[SAINT POWER: UNDEAD SPAWNED!]', {
+        fontFamily: 'Orbitron, sans-serif',
+        fontSize: '10px',
+        color: '#ff0055'
+      }).setOrigin(0.5);
+      this.tweens.add({ targets: pop, y: this.saint.y - 65, alpha: 0, duration: 1200, onComplete: () => pop.destroy() });
+    }
+  }
+
+  spawnHighKnight(x, y, isBossGuard = false) {
     const hk = this.add.container(x, y);
-    const aura = this.add.circle(0, 0, 16, 0x00ff88, 0.35);
-    const core = this.add.circle(0, 0, 10, 0x00ff88, 0.95);
+    const aura = this.add.circle(0, 0, 16, isBossGuard ? 0xff0055 : 0x00ff88, 0.35);
+    const core = this.add.circle(0, 0, 10, isBossGuard ? 0xa855f7 : 0x00ff88, 0.95);
     core.setStrokeStyle(2, 0xffffff, 0.9);
     hk.add([aura, core]);
 
@@ -298,6 +352,7 @@ export class GameScene extends Phaser.Scene {
     this.physics.add.collider(hk, this.walls);
 
     hk.moveTimer = 0;
+    hk.isBossGuard = isBossGuard;
     this.highKnights.push(hk);
 
     // Overlap with Hunter -> Drains HP
@@ -357,33 +412,54 @@ export class GameScene extends Phaser.Scene {
       this.tweens.add({ targets: toast, y: this.cameras.main.midPoint.y - 150, alpha: 0, duration: 1800, onComplete: () => toast.destroy() });
     }
 
-    // 3. AI Specter Evasion
-    this.undeadList.forEach(u => {
-      if (u.isCaptured) return;
+    // 3. AI Specter Evasion & Railway Formation Movement
+    const activeUndead = this.undeadList.filter(u => !u.isCaptured && u.active);
+    activeUndead.forEach((u, index) => {
       if (u.isStunned) {
         u.body.setVelocity(0);
         return;
       }
       u.moveTimer += delta;
-      if (u.moveTimer > 200) {
+      if (u.moveTimer > 180) {
         u.moveTimer = 0;
-        const dist = Phaser.Math.Distance.Between(u.x, u.y, this.player.x, this.player.y);
-        if (dist < 260 && !this.isCamoActive) {
-          const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, u.x, u.y);
-          u.body.setVelocity(Math.cos(angle) * 170, Math.sin(angle) * 170);
+        const distToPlayer = Phaser.Math.Distance.Between(u.x, u.y, this.player.x, this.player.y);
+
+        // When Hunter comes into view / camera range (<280px): SCATTER AND RUN FOR THEIR LIVES!
+        if (distToPlayer < 280 && !this.isCamoActive) {
+          const runAngle = Phaser.Math.Angle.Between(this.player.x, this.player.y, u.x, u.y);
+          // Scatter with slight random variation
+          const scatterAngle = runAngle + (Math.random() - 0.5) * 0.6;
+          u.body.setVelocity(Math.cos(scatterAngle) * 185, Math.sin(scatterAngle) * 185);
+        } else {
+          // Railway Formation: Move in pairs/groups of 2-3 following leader in line
+          if (index % 3 !== 0 && activeUndead[index - 1]) {
+            const leader = activeUndead[index - 1];
+            const leaderDist = Phaser.Math.Distance.Between(u.x, u.y, leader.x, leader.y);
+            if (leaderDist > 25) {
+              const followAngle = Phaser.Math.Angle.Between(u.x, u.y, leader.x, leader.y);
+              u.body.setVelocity(Math.cos(followAngle) * 110, Math.sin(followAngle) * 110);
+            } else {
+              u.body.setVelocity(0);
+            }
+          } else {
+            // Leader Undead roams freely
+            if (Math.random() < 0.1) u.roamAngle = Math.random() * Math.PI * 2;
+            u.body.setVelocity(Math.cos(u.roamAngle) * 90, Math.sin(u.roamAngle) * 90);
+          }
         }
       }
     });
 
     // 4. High Knights AI Chase
     this.highKnights.forEach(hk => {
+      if (!hk.active) return;
       hk.moveTimer += delta;
       if (hk.moveTimer > 150) {
         hk.moveTimer = 0;
         const dist = Phaser.Math.Distance.Between(hk.x, hk.y, this.player.x, this.player.y);
-        if (dist < 320 && !this.isCamoActive) {
+        if (dist < 340 && !this.isCamoActive) {
           const angle = Phaser.Math.Angle.Between(hk.x, hk.y, this.player.x, this.player.y);
-          hk.body.setVelocity(Math.cos(angle) * 150, Math.sin(angle) * 150);
+          hk.body.setVelocity(Math.cos(angle) * (hk.isBossGuard ? 175 : 155), Math.sin(angle) * (hk.isBossGuard ? 175 : 155));
         } else {
           hk.body.setVelocity(0);
         }
@@ -494,9 +570,12 @@ export class GameScene extends Phaser.Scene {
       const pts = 250 * this.multiplier;
       this.score += pts;
 
-      const pop = this.add.text(undead.x, undead.y - 20, `+${pts} XP!`, {
+      // Hunter gains +15 Life Force HP when killing/capturing an Undead!
+      this.heroHp = Math.min(this.maxHeroHp || 100, (this.heroHp || 100) + 15);
+
+      const pop = this.add.text(undead.x, undead.y - 20, `+15 HP & +${pts} XP!`, {
         fontFamily: 'Orbitron, sans-serif',
-        fontSize: '16px',
+        fontSize: '15px',
         color: '#00ff88',
         fontStyle: 'bold'
       }).setOrigin(0.5);
@@ -738,6 +817,36 @@ export class GameScene extends Phaser.Scene {
     sound.playSonar();
     const wave = this.add.circle(this.player.x, this.player.y, 10, 0x00f0ff, 0);
     wave.setStrokeStyle(2, 0x00f0ff, 1);
+
+    // Destroys 1 High Knight & up to 2 Undead within 400px wave range!
+    let destroyedKnights = 0;
+    let destroyedUndead = 0;
+
+    const nearbyKnights = this.highKnights.filter(hk => hk.active && Phaser.Math.Distance.Between(this.player.x, this.player.y, hk.x, hk.y) <= 400);
+    if (nearbyKnights.length > 0) {
+      const targetK = nearbyKnights[0];
+      targetK.active = false;
+      targetK.destroy();
+      destroyedKnights = 1;
+    }
+
+    const nearbyUndead = this.undeadList.filter(u => u.active && !u.isCaptured && Phaser.Math.Distance.Between(this.player.x, this.player.y, u.x, u.y) <= 400);
+    const toDestroyU = nearbyUndead.slice(0, 2);
+    toDestroyU.forEach(u => {
+      u.isCaptured = true;
+      u.active = false;
+      u.destroy();
+      destroyedUndead++;
+    });
+
+    const popText = `[SONAR BLAST: ${destroyedKnights} KNIGHT & ${destroyedUndead} UNDEAD DESTROYED!]`;
+    const pop = this.add.text(this.player.x, this.player.y - 45, popText, {
+      fontFamily: 'Orbitron, sans-serif',
+      fontSize: '12px',
+      color: '#00f0ff',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+    this.tweens.add({ targets: pop, y: this.player.y - 80, alpha: 0, duration: 1600, onComplete: () => pop.destroy() });
 
     this.tweens.add({
       targets: wave,

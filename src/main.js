@@ -317,6 +317,7 @@ class AppManager {
   }
 
   startSoloMatch(level = 1) {
+    sound.init();
     this.lastLevel = level;
     this.switchScreen('warp-transition-splash', 'game-hud');
 
