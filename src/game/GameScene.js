@@ -116,27 +116,70 @@ export class GameScene extends Phaser.Scene {
     });
 
     // Match Timer & Saint Continuous Spawning Engine (Spawns more as game progresses)
+    this.isChurchCorrupted = false;
     this.time.addEvent({
       delay: 1000,
       callback: () => {
         if (!this.isMatchActive) return;
         this.timeElapsed += 1;
 
-        // 1. Saint Power: Spawns Undead every 6 seconds (progressively faster)
-        if (this.timeElapsed % Math.max(3, 6 - Math.floor(this.timeElapsed / 25)) === 0) {
-          this.spawnSaintUndead();
+        // Check if Lord General has entered Holy Church zone or game duration exceeds 60s
+        if (this.lordGeneral && this.lordGeneral.active) {
+          const bgc = Math.floor(this.lordGeneral.x / this.tileSize);
+          const bgr = Math.floor(this.lordGeneral.y / this.tileSize);
+          const inChurch = (bgc >= 5 && bgc <= 24 && bgr >= 35 && bgr <= 55);
+
+          if ((inChurch || this.timeElapsed >= 60) && !this.isChurchCorrupted) {
+            this.isChurchCorrupted = true;
+            const toast = this.add.text(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y - 140, '⚠️ WARNING: LORD GENERAL CORRUPTING HOLY CHURCH!\nSAINT SPAWNING HIGH KNIGHT PAIRS EVERY 3s!', {
+              fontFamily: 'Orbitron, sans-serif',
+              fontSize: '15px',
+              color: '#ff0055',
+              fontStyle: 'bold',
+              align: 'center',
+              backgroundColor: 'rgba(25, 5, 10, 0.9)',
+              padding: { x: 14, y: 8 }
+            }).setOrigin(0.5);
+            this.tweens.add({ targets: toast, y: this.cameras.main.midPoint.y - 170, alpha: 0, duration: 3500, onComplete: () => toast.destroy() });
+          }
         }
 
-        // 2. Lord General Fleeing Minion Timer: Spawns 1 High Knight every 10 seconds
-        if (this.timeElapsed % 10 === 0 && this.lordGeneral && this.lordGeneral.active) {
-          this.spawnHighKnight(this.lordGeneral.x + (Math.random() > 0.5 ? 40 : -40), this.lordGeneral.y + (Math.random() > 0.5 ? 40 : -40));
-          const pop = this.add.text(this.lordGeneral.x, this.lordGeneral.y - 45, '[LORD GENERAL: REINFORCEMENT SPAWNED!]', {
+        // 1. Saint Power: Normal Undead spawning OR Corrupted High Knight Pairs Spawning
+        if (this.isChurchCorrupted) {
+          if (this.timeElapsed % 3 === 0) {
+            this.spawnSaintCorruptedPair();
+          }
+        } else {
+          if (this.timeElapsed % Math.max(3, 6 - Math.floor(this.timeElapsed / 25)) === 0) {
+            this.spawnSaintUndead();
+          }
+        }
+
+        // 2. Lord General Strategic Tactical Spawner: Spawns 1 or 2 High Knights at ambush positions
+        const spawnInterval = Math.max(6, 10 - Math.floor(this.timeElapsed / 20));
+        if (this.timeElapsed % spawnInterval === 0 && this.lordGeneral && this.lordGeneral.active) {
+          const isAdvanced = this.timeElapsed >= 30;
+          const spawnCount = isAdvanced ? 2 : 1;
+
+          for (let i = 0; i < spawnCount; i++) {
+            // Strategic ambush coordinates relative to Hunter
+            const ambushOffsetX = (Math.random() > 0.5 ? 1 : -1) * (140 + i * 40);
+            const ambushOffsetY = (Math.random() > 0.5 ? 1 : -1) * (140 + i * 40);
+            this.spawnHighKnight(
+              Phaser.Math.Clamp(this.player.x + ambushOffsetX, 4 * this.tileSize, 75 * this.tileSize),
+              Phaser.Math.Clamp(this.player.y + ambushOffsetY, 4 * this.tileSize, 55 * this.tileSize),
+              true
+            );
+          }
+
+          const msg = isAdvanced ? '[GROQ AI DEMON LORD: STRATEGIC FLANKING AMBUSH!]' : '[LORD GENERAL: REINFORCEMENT SPAWNED!]';
+          const pop = this.add.text(this.lordGeneral.x, this.lordGeneral.y - 45, msg, {
             fontFamily: 'Orbitron, sans-serif',
             fontSize: '11px',
             color: '#ff0055',
             fontStyle: 'bold'
           }).setOrigin(0.5);
-          this.tweens.add({ targets: pop, y: this.lordGeneral.y - 70, alpha: 0, duration: 1400, onComplete: () => pop.destroy() });
+          this.tweens.add({ targets: pop, y: this.lordGeneral.y - 70, alpha: 0, duration: 1600, onComplete: () => pop.destroy() });
         }
       },
       loop: true
@@ -340,6 +383,25 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  spawnSaintCorruptedPair() {
+    if (!this.saint || !this.isMatchActive) return;
+    const spawnX1 = this.saint.x + (Math.random() - 0.5) * 60;
+    const spawnY1 = this.saint.y + (Math.random() - 0.5) * 60;
+    const spawnX2 = this.saint.x + (Math.random() - 0.5) * 60;
+    const spawnY2 = this.saint.y + (Math.random() - 0.5) * 60;
+
+    this.spawnHighKnight(spawnX1, spawnY1, false);
+    this.spawnHighKnight(spawnX2, spawnY2, false);
+
+    const pop = this.add.text(this.saint.x, this.saint.y - 45, '[CORRUPTED SAINT: HIGH KNIGHT PAIR BORN!]', {
+      fontFamily: 'Orbitron, sans-serif',
+      fontSize: '11px',
+      color: '#ff0055',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+    this.tweens.add({ targets: pop, y: this.saint.y - 75, alpha: 0, duration: 1500, onComplete: () => pop.destroy() });
+  }
+
   spawnHighKnight(x, y, isBossGuard = false) {
     const hk = this.add.container(x, y);
     const aura = this.add.circle(0, 0, 16, isBossGuard ? 0xff0055 : 0x00ff88, 0.35);
@@ -466,14 +528,34 @@ export class GameScene extends Phaser.Scene {
       }
     });
 
-    // 4.5. Lord General Boss Evasion AI
+    // 4.5. Lord General Tactical AI: Long-Range Hero Detection & Dynamic Map Roaming
     if (this.lordGeneral && this.lordGeneral.active) {
-      const dist = Phaser.Math.Distance.Between(this.lordGeneral.x, this.lordGeneral.y, this.player.x, this.player.y);
-      if (dist < 380 && !this.isCamoActive) {
-        const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, this.lordGeneral.x, this.lordGeneral.y);
-        this.lordGeneral.body.setVelocity(Math.cos(angle) * 215, Math.sin(angle) * 215);
+      const distToHero = Phaser.Math.Distance.Between(this.lordGeneral.x, this.lordGeneral.y, this.player.x, this.player.y);
+      const bossSpeed = Math.min(265, 215 + Math.floor(this.timeElapsed / 10) * 5);
+
+      if (distToHero < 600 && !this.isCamoActive) {
+        // Detects Hero from afar! If Hero gets close (<320px), flees tactically away
+        if (distToHero < 320) {
+          const runAngle = Phaser.Math.Angle.Between(this.player.x, this.lordGeneral.x, this.player.y, this.lordGeneral.y);
+          this.lordGeneral.body.setVelocity(Math.cos(runAngle) * bossSpeed, Math.sin(runAngle) * bossSpeed);
+        } else {
+          // Tactical positioning: Flanks toward open zone or Holy Church
+          const churchX = 14 * this.tileSize;
+          const churchY = 45 * this.tileSize;
+          const angleToChurch = Phaser.Math.Angle.Between(this.lordGeneral.x, this.lordGeneral.y, churchX, churchY);
+          this.lordGeneral.body.setVelocity(Math.cos(angleToChurch) * (bossSpeed * 0.8), Math.sin(angleToChurch) * (bossSpeed * 0.8));
+        }
       } else {
-        this.lordGeneral.body.setVelocity(0);
+        // Long-range roaming: Lord General moves toward Holy Church to corrupt the Saint!
+        const churchX = 14 * this.tileSize;
+        const churchY = 45 * this.tileSize;
+        const distToChurch = Phaser.Math.Distance.Between(this.lordGeneral.x, this.lordGeneral.y, churchX, churchY);
+        if (distToChurch > 40) {
+          const moveAngle = Phaser.Math.Angle.Between(this.lordGeneral.x, this.lordGeneral.y, churchX, churchY);
+          this.lordGeneral.body.setVelocity(Math.cos(moveAngle) * 140, Math.sin(moveAngle) * 140);
+        } else {
+          this.lordGeneral.body.setVelocity(0);
+        }
       }
     }
 
