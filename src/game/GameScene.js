@@ -257,6 +257,7 @@ export class GameScene extends Phaser.Scene {
       { c: 8, r: 38 }, { c: 20, r: 38 }, { c: 8, r: 52 }, { c: 20, r: 52 }, { c: 14, r: 40 }, // Holy Church Guards (5)
       { c: 58, r: 40 }, { c: 72, r: 48 } // Dark Void Boss Guards (2)
     ];
+    this.initialKnightSpawns = knightSpawns.map(sp => ({ x: sp.c * this.tileSize, y: sp.r * this.tileSize }));
     knightSpawns.forEach(sp => this.spawnHighKnight(sp.c * this.tileSize, sp.r * this.tileSize));
 
     // 4. Spawn Lord General Boss 🖤 in Dark Void Layer
@@ -290,215 +291,48 @@ export class GameScene extends Phaser.Scene {
     hk.moveTimer = 0;
     this.highKnights.push(hk);
 
-    // Overlap with Hunter -> Drains XP
+    // Overlap with Hunter -> Drains HP
     this.physics.add.overlap(this.player, hk, () => this.handleKnightHunterContact(hk));
   }
 
-  update(time, delta) {
-    if (!this.isMatchActive || !this.player) return;
+  takeDamage(amount, cause) {
+    if (this.isShieldActive || this.isInvincible || !this.isMatchActive) return;
 
-    // 1. Player Movement (Keyboard + Touch D-Pad)
-    const speed = 200;
-    const body = this.player.body;
-    body.setVelocity(0);
+    this.heroHp = Math.max(0, this.heroHp - amount);
+    this.isInvincible = true;
 
-    let moveX = 0;
-    let moveY = 0;
-
-    if (this.cursors.left.isDown || this.keys.A.isDown || this.dpadLeft) moveX = -speed;
-    else if (this.cursors.right.isDown || this.keys.D.isDown || this.dpadRight) moveX = speed;
-
-    if (this.cursors.up.isDown || this.keys.W.isDown || this.dpadUp) moveY = -speed;
-    else if (this.cursors.down.isDown || this.keys.S.isDown || this.dpadDown) moveY = speed;
-
-    body.setVelocity(moveX, moveY);
-    body.velocity.normalize().scale(speed);
-
-    // 2. Zone Detection & Animated Toast Banner based on Player Location
-    const pc = Math.floor(this.player.x / this.tileSize);
-    const pr = Math.floor(this.player.y / this.tileSize);
-    const currentZone = this.zones.find(z => pc >= z.minC && pc <= z.maxC && pr >= z.minR && pr <= z.maxR);
-    if (currentZone && currentZone.name !== this.currentZoneName) {
-      this.currentZoneName = currentZone.name;
-
-      // Toast alert banner
-      const toast = this.add.text(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y - 120, `ENTERING ZONE: ${currentZone.name}`, {
-        fontFamily: 'Orbitron, sans-serif',
-        fontSize: '16px',
-        color: '#00f0ff',
-        fontStyle: 'bold',
-        backgroundColor: 'rgba(11, 15, 25, 0.8)',
-        padding: { x: 12, y: 6 }
-      }).setOrigin(0.5);
-
-      this.tweens.add({ targets: toast, y: this.cameras.main.midPoint.y - 150, alpha: 0, duration: 1800, onComplete: () => toast.destroy() });
-    }
-
-    // 3. AI Specter Evasion
-    this.undeadList.forEach(u => {
-      if (u.isCaptured) return;
-      if (u.isStunned) {
-        u.body.setVelocity(0);
-        return;
-      }
-      u.moveTimer += delta;
-      if (u.moveTimer > 200) {
-        u.moveTimer = 0;
-        const dist = Phaser.Math.Distance.Between(u.x, u.y, this.player.x, this.player.y);
-        if (dist < 260 && !this.isCamoActive) {
-          const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, u.x, u.y);
-          u.body.setVelocity(Math.cos(angle) * 170, Math.sin(angle) * 170);
-        }
-      }
-    });
-
-    // 4. High Knights AI Chase
-    this.highKnights.forEach(hk => {
-      hk.moveTimer += delta;
-      if (hk.moveTimer > 150) {
-        hk.moveTimer = 0;
-        const dist = Phaser.Math.Distance.Between(hk.x, hk.y, this.player.x, this.player.y);
-        if (dist < 320 && !this.isCamoActive) {
-          const angle = Phaser.Math.Angle.Between(hk.x, hk.y, this.player.x, this.player.y);
-          hk.body.setVelocity(Math.cos(angle) * 150, Math.sin(angle) * 150);
-        } else {
-          hk.body.setVelocity(0);
-        }
-      }
-    });
-
-    // 4.5. Lord General Boss Evasion Chase AI
-    if (this.lordGeneral && this.lordGeneral.active) {
-      const dist = Phaser.Math.Distance.Between(this.lordGeneral.x, this.lordGeneral.y, this.player.x, this.player.y);
-      if (dist < 380 && !this.isCamoActive) {
-        // Boss runs away from hero at speed 215 (faster than hero's 200 speed)!
-        const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, this.lordGeneral.x, this.lordGeneral.y);
-        this.lordGeneral.body.setVelocity(Math.cos(angle) * 215, Math.sin(angle) * 215);
-      } else {
-        this.lordGeneral.body.setVelocity(0);
-      }
-    }
-
-    // 5. Check Trap Collisions
-    this.traps.forEach(trap => {
-      if (!trap.active) return;
-      this.undeadList.forEach(u => {
-        if (!u.isCaptured && !u.isStunned) {
-          if (Phaser.Math.Distance.Between(trap.x, trap.y, u.x, u.y) < 28) {
-            this.triggerTrap(trap, u);
-          }
-        }
-      });
-      // Trap hits Boss!
-      if (this.lordGeneral && this.lordGeneral.active) {
-        if (Phaser.Math.Distance.Between(trap.x, trap.y, this.lordGeneral.x, this.lordGeneral.y) < 32) {
-          this.triggerBossTrap(trap);
-        }
-      }
-    });
-
-    // 6. Update HUD Callback
-    if (this.hudCallback) {
-      const remainingUndead = this.undeadList.filter(u => !u.isCaptured).length;
-      this.hudCallback({
-        score: this.score,
-        heroHp: this.heroHp,
-        maxHeroHp: this.maxHeroHp,
-        multiplier: this.multiplier,
-        remainingSpecters: remainingUndead,
-        zoneName: this.currentZoneName,
-        generalsLeft: 5 - this.generalsDefeated
-      });
-    }
-  }
-
-  deployCurrentTrap() {
-    if (!this.isMatchActive) return;
-
-    sound.playTrapDeploy();
-    const trap = this.add.container(this.player.x, this.player.y);
-    const ring = this.add.circle(0, 0, 18, 0xffb800, 0.2);
-    ring.setStrokeStyle(2, 0xffb800, 0.9);
-    const innerDot = this.add.circle(0, 0, 6, 0xffb800, 1);
-
-    trap.add([ring, innerDot]);
-    trap.active = true;
-    this.traps.push(trap);
-    this.trapsSprungCount += 1;
-
-    const pop = this.add.text(this.player.x, this.player.y - 20, 'TRAP ARMED!', {
-      fontFamily: 'Orbitron, sans-serif',
-      fontSize: '11px',
-      color: '#ffb800'
-    }).setOrigin(0.5);
-    this.tweens.add({ targets: pop, y: this.player.y - 35, alpha: 0, duration: 600, onComplete: () => pop.destroy() });
-  }
-
-  triggerTrap(trap, undead) {
-    trap.active = false;
-    trap.destroy();
-    sound.playTrapDeploy();
-
-    undead.isStunned = true;
-    this.multiplier += 1;
-
-    const pop = this.add.text(undead.x, undead.y - 20, 'UNDEAD STUNNED!', {
+    // Visual damage indicator text
+    const pop = this.add.text(this.player.x, this.player.y - 20, `-${amount} HP!`, {
       fontFamily: 'Orbitron, sans-serif',
       fontSize: '13px',
-      color: '#ffb800',
+      color: '#ff0055',
       fontStyle: 'bold'
     }).setOrigin(0.5);
-    this.tweens.add({ targets: pop, y: undead.y - 45, alpha: 0, duration: 900, onComplete: () => pop.destroy() });
+    this.tweens.add({ targets: pop, y: this.player.y - 45, alpha: 0, duration: 800, onComplete: () => pop.destroy() });
 
+    // Flash player container for 1.2s invulnerability period
     this.tweens.add({
-      targets: undead,
+      targets: this.player,
       alpha: 0.3,
       yoyo: true,
-      repeat: 6,
-      duration: 150,
+      repeat: 4,
+      duration: 120,
       onComplete: () => {
-        if (!undead.isCaptured) {
-          undead.isStunned = false;
-          undead.alpha = 1;
-        }
+        if (this.player) this.player.alpha = 1;
       }
     });
-  }
 
-  handleHunterUndeadContact(undead) {
-    if (undead.isCaptured) return;
-    if (undead.isStunned || this.isShieldActive) {
-      undead.isCaptured = true;
-      const pts = 250 * this.multiplier;
-      this.score += pts;
+    this.time.delayedCall(1200, () => {
+      this.isInvincible = false;
+    });
 
-      const pop = this.add.text(undead.x, undead.y - 20, `+${pts} XP!`, {
-        fontFamily: 'Orbitron, sans-serif',
-        fontSize: '16px',
-        color: '#00ff88',
-        fontStyle: 'bold'
-      }).setOrigin(0.5);
-      this.tweens.add({ targets: pop, y: undead.y - 50, alpha: 0, duration: 1000, onComplete: () => pop.destroy() });
-
-      undead.destroy();
-      sound.playCaptureTriumph();
+    if (this.heroHp <= 0) {
+      this.triggerHeroDeath(cause);
     }
   }
 
   handleKnightHunterContact(hk) {
-    if (this.isShieldActive || !this.isMatchActive) return;
-    this.heroHp = Math.max(0, this.heroHp - 25);
-    const pop = this.add.text(this.player.x, this.player.y - 20, '-25 HP (KNIGHT STRIKE!)', {
-      fontFamily: 'Orbitron, sans-serif',
-      fontSize: '12px',
-      color: '#ff0055',
-      fontStyle: 'bold'
-    }).setOrigin(0.5);
-    this.tweens.add({ targets: pop, y: this.player.y - 40, alpha: 0, duration: 700, onComplete: () => pop.destroy() });
-
-    if (this.heroHp <= 0) {
-      this.triggerHeroDeath("Hero was killed by High Knight");
-    }
+    this.takeDamage(25, "Hero was killed by High Knight");
   }
 
   handleHunterGeneralContact() {
@@ -521,18 +355,7 @@ export class GameScene extends Phaser.Scene {
         this.finishMatch(true);
       }
     } else {
-      this.heroHp = Math.max(0, this.heroHp - 50);
-      const pop = this.add.text(this.player.x, this.player.y - 20, '-50 HP (GENERAL STRIKE!)', {
-        fontFamily: 'Orbitron, sans-serif',
-        fontSize: '13px',
-        color: '#ff0055',
-        fontStyle: 'bold'
-      }).setOrigin(0.5);
-      this.tweens.add({ targets: pop, y: this.player.y - 40, alpha: 0, duration: 700, onComplete: () => pop.destroy() });
-
-      if (this.heroHp <= 0) {
-        this.triggerHeroDeath("Hero was slain by Lord General");
-      }
+      this.takeDamage(50, "Hero was slain by Lord General");
     }
   }
 
@@ -593,6 +416,7 @@ export class GameScene extends Phaser.Scene {
   respawnHero() {
     if (!this.player) return;
     this.heroHp = this.maxHeroHp || 100;
+    this.currentZoneName = 'CENTRAL VIEWPORT';
     
     const spawnX = 40 * this.tileSize;
     const spawnY = 30 * this.tileSize;
@@ -601,13 +425,29 @@ export class GameScene extends Phaser.Scene {
     if (this.player.body) {
       this.player.body.reset(spawnX, spawnY);
     }
+
+    // Reset High Knights back to their starting positions
+    if (this.initialKnightSpawns && this.highKnights) {
+      this.highKnights.forEach((hk, i) => {
+        const sp = this.initialKnightSpawns[i];
+        if (sp && hk.body) {
+          hk.setPosition(sp.x, sp.y);
+          hk.body.reset(sp.x, sp.y);
+        }
+      });
+    }
     
     this.cameras.main.resetFX();
     this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
     
     this.isMatchActive = true;
+    this.isInvincible = true;
     this.shieldCooldown = false;
     this.activateShield(); // Grant temporary spawn shield
+
+    this.time.delayedCall(4000, () => {
+      this.isInvincible = false;
+    });
 
     // Immediate HUD update on respawn
     if (this.hudCallback) {

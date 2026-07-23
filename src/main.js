@@ -438,6 +438,9 @@ class AppManager {
   }
 
   exitMatch() {
+    document.getElementById('hero-death-modal').classList.add('hidden');
+    document.getElementById('pause-modal').classList.add('hidden');
+    document.getElementById('match-summary-modal').classList.add('hidden');
     if (this.gameScene) {
       this.gameScene.isMatchActive = false;
     }
