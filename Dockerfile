@@ -1,3 +1,12 @@
+# Stage 1: Build Vite frontend
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci || npm install
+COPY . .
+RUN npm run build
+
+# Stage 2: Production PHP-FPM + Nginx server
 FROM php:8.3-fpm-alpine
 
 # Install Nginx and required dependencies
@@ -9,10 +18,13 @@ COPY nginx.conf /etc/nginx/nginx.conf
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy application files
+# Copy application backend and source files
 COPY . /var/www/html/
 
-# Permissions
+# Copy built frontend assets from builder stage
+COPY --from=builder /app/dist /var/www/html/dist
+
+# Set permissions
 RUN chown -R www-data:www-data /var/www/html
 
 EXPOSE 80

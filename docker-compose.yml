@@ -4,6 +4,7 @@ services:
   ipacu-app:
     build: .
     ports:
+      - "8888:80"
       - "8080:80"
     environment:
       - PORT=80
