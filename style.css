@@ -1187,16 +1187,35 @@ html, body {
 }
 
 /* ==========================================================================
-   MINECRAFT-VIBES DEATH OVERLAY STYLES
+   MINECRAFT-VIBES DEATH & VICTORY OVERLAY STYLES
    ========================================================================== */
 
+.minecraft-death-overlay,
+.minecraft-victory-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 99999 !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
 .minecraft-death-overlay {
-  background: radial-gradient(circle, rgba(160, 0, 0, 0.75) 0%, rgba(30, 0, 0, 0.95) 100%) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: radial-gradient(circle, rgba(160, 0, 0, 0.85) 0%, rgba(30, 0, 0, 0.96) 100%) !important;
+}
+
+.minecraft-victory-overlay {
+  background: radial-gradient(circle, rgba(0, 100, 60, 0.85) 0%, rgba(5, 30, 20, 0.96) 100%) !important;
+}
+
+.minecraft-death-overlay.hidden,
+.minecraft-victory-overlay.hidden {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 
 .minecraft-death-card {
@@ -1208,14 +1227,23 @@ html, body {
   align-items: center;
 }
 
-.minecraft-death-title {
+.minecraft-death-title,
+.minecraft-victory-title {
   font-family: 'Orbitron', 'Courier New', monospace, sans-serif;
-  font-size: 3.5rem;
+  font-size: 3.8rem;
   font-weight: 900;
-  color: #ff3333;
-  text-shadow: 3px 3px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;
   letter-spacing: 0.05em;
   margin-bottom: 12px;
+}
+
+.minecraft-death-title {
+  color: #ff3333;
+  text-shadow: 3px 3px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;
+}
+
+.minecraft-victory-title {
+  color: #00ff88;
+  text-shadow: 3px 3px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;
 }
 
 .minecraft-death-msg {
@@ -1243,7 +1271,7 @@ html, body {
   flex-direction: column;
   gap: 14px;
   width: 100%;
-  max-width: 340px;
+  max-width: 360px;
 }
 
 .minecraft-btn {
@@ -1258,6 +1286,10 @@ html, body {
   box-shadow: inset -2px -4px 0px rgba(0, 0, 0, 0.5), inset 2px 2px 0px rgba(255, 255, 255, 0.2);
   transition: all 0.15s ease;
   outline: none;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .minecraft-btn.primary {

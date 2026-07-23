@@ -352,16 +352,13 @@
     </footer>
   </div>
 
-  <!-- MATCH SUMMARY MODAL -->
-  <div id="match-summary-modal" class="screen-overlay hidden">
-    <div class="glass-card modal-card text-center">
-      <div class="modal-badge-icon victory" id="summary-status-icon">
-        <svg viewBox="0 0 24 24" width="48" height="48"><use href="#icon-crown"/></svg>
-      </div>
-      <h2 id="summary-title" class="glitch-title">LORD GENERAL DEFEATED!</h2>
-      <p id="summary-subtitle" class="subtitle">SAINT FREED FROM THE LABYRINTH</p>
+  <!-- MATCH SUMMARY / GENERAL DEFEATED VICTORY OVERLAY -->
+  <div id="match-summary-modal" class="screen-overlay minecraft-victory-overlay hidden">
+    <div class="minecraft-death-card text-center">
+      <h1 class="minecraft-victory-title" id="summary-title">General Defeated!</h1>
+      <p id="summary-subtitle" class="minecraft-death-msg" style="border-left-color: #00ff88;">SAINT FREED FROM THE LABYRINTH</p>
 
-      <div class="summary-stats-grid">
+      <div class="summary-stats-grid" style="width: 100%; max-width: 400px; margin: 16px 0;">
         <div class="summary-stat">
           <span class="stat-label">CAMPAIGN XP</span>
           <span id="summary-score" class="stat-number">8,500</span>
@@ -380,13 +377,12 @@
         </div>
       </div>
 
-      <div class="modal-actions">
-        <button id="btn-retry-match" class="btn-cyber primary">
-          <svg viewBox="0 0 24 24" width="20" height="20"><use href="#icon-refresh"/></svg>
-          <span>HUNT NEXT LORD GENERAL</span>
+      <div class="minecraft-actions">
+        <button id="btn-retry-match" class="minecraft-btn primary">
+          <span>Hunt Lord General 2</span>
         </button>
-        <button id="btn-return-menu" class="btn-cyber secondary">
-          <span>MAIN MENU</span>
+        <button id="btn-return-menu" class="minecraft-btn secondary">
+          <span>Title Screen</span>
         </button>
       </div>
     </div>
@@ -454,6 +450,9 @@
         <button id="btn-create-room" class="btn-cyber primary">CREATE HOST ROOM</button>
         <div id="lobby-status" class="lobby-status-text">DISCONNECTED FROM FIREBASE CLOUD</div>
       </div>
+    </div>
+  </div>
+
   <!-- PAUSE GAME MODAL -->
   <div id="pause-modal" class="screen-overlay hidden">
     <div class="glass-card modal-card text-center pause-card">

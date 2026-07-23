@@ -447,17 +447,22 @@ class AppManager {
     const { xpGained } = storage.recordMatchResult(matchData);
 
     const generals = matchData.generalsDefeated || 1;
-    document.getElementById('summary-title').innerText = `LORD GENERAL DEFEATED!`;
-    document.getElementById('summary-subtitle').innerText = `SAINT ${generals} FREED FROM THE LABYRINTH`;
+    const nextLevel = generals + 1;
+
+    document.getElementById('summary-title').innerText = `General Defeated!`;
+    document.getElementById('summary-subtitle').innerText = `SAINT FREED FROM THE LABYRINTH (GENERAL ${generals} OF 5 SLAIN)`;
     document.getElementById('summary-score').innerText = storage.profile.totalXp.toLocaleString();
-    const mins = Math.floor(matchData.timeSeconds / 60).toString().padStart(2, '0');
-    const secs = (matchData.timeSeconds % 60).toString().padStart(2, '0');
+    const mins = Math.floor((matchData.timeSeconds || 0) / 60).toString().padStart(2, '0');
+    const secs = ((matchData.timeSeconds || 0) % 60).toString().padStart(2, '0');
     document.getElementById('summary-time').innerText = `${mins}:${secs}`;
-    document.getElementById('summary-traps').innerText = matchData.trapsSprung;
+    document.getElementById('summary-traps').innerText = matchData.trapsSprung || 0;
     document.getElementById('summary-xp').innerText = `+${xpGained} XP`;
 
     const btnNext = document.getElementById('btn-retry-match');
-    btnNext.querySelector('span').innerText = `HUNT GENERAL ${generals + 1}`;
+    if (btnNext) {
+      const span = btnNext.querySelector('span') || btnNext;
+      span.innerText = `Hunt Lord General ${nextLevel}`;
+    }
 
     document.getElementById('match-summary-modal').classList.remove('hidden');
     this.updateUserMenuStats();
