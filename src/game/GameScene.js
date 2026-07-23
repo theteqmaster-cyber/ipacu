@@ -433,6 +433,80 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  deployCurrentTrap() {
+    if (!this.isMatchActive || !this.player) return;
+
+    sound.playTrapDeploy();
+    const trap = this.add.container(this.player.x, this.player.y);
+    const ring = this.add.circle(0, 0, 18, 0xffb800, 0.2);
+    ring.setStrokeStyle(2, 0xffb800, 0.9);
+    const innerDot = this.add.circle(0, 0, 6, 0xffb800, 1);
+
+    trap.add([ring, innerDot]);
+    trap.active = true;
+    this.traps.push(trap);
+    this.trapsSprungCount += 1;
+
+    const pop = this.add.text(this.player.x, this.player.y - 20, 'TRAP ARMED!', {
+      fontFamily: 'Orbitron, sans-serif',
+      fontSize: '11px',
+      color: '#ffb800'
+    }).setOrigin(0.5);
+    this.tweens.add({ targets: pop, y: this.player.y - 35, alpha: 0, duration: 600, onComplete: () => pop.destroy() });
+  }
+
+  triggerTrap(trap, undead) {
+    if (!trap || !trap.active) return;
+    trap.active = false;
+    trap.destroy();
+    sound.playTrapDeploy();
+
+    undead.isStunned = true;
+    this.multiplier += 1;
+
+    const pop = this.add.text(undead.x, undead.y - 20, 'UNDEAD STUNNED!', {
+      fontFamily: 'Orbitron, sans-serif',
+      fontSize: '13px',
+      color: '#ffb800',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+    this.tweens.add({ targets: pop, y: undead.y - 45, alpha: 0, duration: 900, onComplete: () => pop.destroy() });
+
+    this.tweens.add({
+      targets: undead,
+      alpha: 0.3,
+      yoyo: true,
+      repeat: 6,
+      duration: 150,
+      onComplete: () => {
+        if (!undead.isCaptured && undead.active) {
+          undead.isStunned = false;
+          undead.alpha = 1;
+        }
+      }
+    });
+  }
+
+  handleHunterUndeadContact(undead) {
+    if (!undead || undead.isCaptured) return;
+    if (undead.isStunned || this.isShieldActive) {
+      undead.isCaptured = true;
+      const pts = 250 * this.multiplier;
+      this.score += pts;
+
+      const pop = this.add.text(undead.x, undead.y - 20, `+${pts} XP!`, {
+        fontFamily: 'Orbitron, sans-serif',
+        fontSize: '16px',
+        color: '#00ff88',
+        fontStyle: 'bold'
+      }).setOrigin(0.5);
+      this.tweens.add({ targets: pop, y: undead.y - 50, alpha: 0, duration: 1000, onComplete: () => pop.destroy() });
+
+      undead.destroy();
+      sound.playCaptureTriumph();
+    }
+  }
+
   takeDamage(amount, cause) {
     if (this.isShieldActive || this.isInvincible || !this.isMatchActive) return;
 

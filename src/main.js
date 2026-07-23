@@ -222,13 +222,16 @@ class AppManager {
 
     // HUD Ability Buttons
     document.getElementById('skill-shield').addEventListener('click', () => {
-      if (this.gameScene) this.gameScene.activateShield();
+      const scene = this.getGameScene();
+      scene?.activateShield?.();
     });
     document.getElementById('skill-camo').addEventListener('click', () => {
-      if (this.gameScene) this.gameScene.activateCamo();
+      const scene = this.getGameScene();
+      scene?.activateCamo?.();
     });
     document.getElementById('skill-sonar').addEventListener('click', () => {
-      if (this.gameScene) this.gameScene.activateSonar();
+      const scene = this.getGameScene();
+      scene?.activateSonar?.();
     });
 
     // Touch D-Pad Event Handlers for Mobile & On-Screen Touch Controls
@@ -268,7 +271,7 @@ class AppManager {
       const deployTrap = (e) => {
         if (e.cancelable) e.preventDefault();
         const scene = this.getGameScene();
-        if (scene) scene.deployCurrentTrap();
+        scene?.deployCurrentTrap?.();
       };
       trapBtn.addEventListener('pointerdown', deployTrap);
       trapBtn.addEventListener('touchstart', deployTrap, { passive: false });
