@@ -231,13 +231,31 @@ class AppManager {
       if (this.gameScene) this.gameScene.activateSonar();
     });
 
-    // Touch D-Pad Event Handlers for Mobile Devices
+    // Touch D-Pad Event Handlers for Mobile & On-Screen Touch Controls
     const bindDpad = (id, prop) => {
       const btn = document.getElementById(id);
       if (!btn) return;
-      btn.addEventListener('pointerdown', (e) => { e.preventDefault(); if (this.gameScene) this.gameScene[prop] = true; });
-      btn.addEventListener('pointerup', (e) => { e.preventDefault(); if (this.gameScene) this.gameScene[prop] = false; });
-      btn.addEventListener('pointerleave', (e) => { e.preventDefault(); if (this.gameScene) this.gameScene[prop] = false; });
+
+      const startMove = (e) => {
+        if (e.cancelable) e.preventDefault();
+        const scene = this.getGameScene();
+        if (scene) scene[prop] = true;
+      };
+
+      const stopMove = (e) => {
+        if (e.cancelable) e.preventDefault();
+        const scene = this.getGameScene();
+        if (scene) scene[prop] = false;
+      };
+
+      btn.addEventListener('pointerdown', startMove);
+      btn.addEventListener('pointerup', stopMove);
+      btn.addEventListener('pointerleave', stopMove);
+      btn.addEventListener('touchstart', startMove, { passive: false });
+      btn.addEventListener('touchend', stopMove, { passive: false });
+      btn.addEventListener('touchcancel', stopMove, { passive: false });
+      btn.addEventListener('mousedown', startMove);
+      btn.addEventListener('mouseup', stopMove);
     };
 
     bindDpad('dpad-up', 'dpadUp');
@@ -247,10 +265,14 @@ class AppManager {
 
     const trapBtn = document.getElementById('dpad-trap');
     if (trapBtn) {
-      trapBtn.addEventListener('pointerdown', (e) => {
-        e.preventDefault();
-        if (this.gameScene) this.gameScene.deployCurrentTrap();
-      });
+      const deployTrap = (e) => {
+        if (e.cancelable) e.preventDefault();
+        const scene = this.getGameScene();
+        if (scene) scene.deployCurrentTrap();
+      };
+      trapBtn.addEventListener('pointerdown', deployTrap);
+      trapBtn.addEventListener('touchstart', deployTrap, { passive: false });
+      trapBtn.addEventListener('mousedown', deployTrap);
     }
   }
 

@@ -106,6 +106,15 @@ export class GameScene extends Phaser.Scene {
     this.input.keyboard.on('keydown-TWO', () => this.activateCamo());
     this.input.keyboard.on('keydown-THREE', () => this.activateSonar());
 
+    // 7. Touch / Mouse Tap-To-Move Pointer Listener
+    this.targetMovePoint = null;
+    this.input.on('pointerdown', (pointer) => {
+      if (!this.isMatchActive || !this.player) return;
+      if (pointer.downElement && pointer.downElement.tagName !== 'CANVAS') return;
+      const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
+      this.targetMovePoint = { x: worldPoint.x, y: worldPoint.y };
+    });
+
     // Timer
     this.time.addEvent({
       delay: 1000,
@@ -293,6 +302,135 @@ export class GameScene extends Phaser.Scene {
 
     // Overlap with Hunter -> Drains HP
     this.physics.add.overlap(this.player, hk, () => this.handleKnightHunterContact(hk));
+  }
+
+  update(time, delta) {
+    if (!this.isMatchActive || !this.player) return;
+
+    // 1. Player Movement (Keyboard WASD / Arrows + Touch D-Pad)
+    const speed = 220;
+    const body = this.player.body;
+    body.setVelocity(0);
+
+    let moveX = 0;
+    let moveY = 0;
+
+    if ((this.cursors && this.cursors.left.isDown) || (this.keys && this.keys.A.isDown) || this.dpadLeft) moveX = -speed;
+    else if ((this.cursors && this.cursors.right.isDown) || (this.keys && this.keys.D.isDown) || this.dpadRight) moveX = speed;
+
+    if ((this.cursors && this.cursors.up.isDown) || (this.keys && this.keys.W.isDown) || this.dpadUp) moveY = -speed;
+    else if ((this.cursors && this.cursors.down.isDown) || (this.keys && this.keys.S.isDown) || this.dpadDown) moveY = speed;
+
+    // Handle Tap-To-Move / Pointer Click Destination
+    if (moveX !== 0 || moveY !== 0) {
+      this.targetMovePoint = null;
+    } else if (this.targetMovePoint) {
+      const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.targetMovePoint.x, this.targetMovePoint.y);
+      if (dist < 12) {
+        this.targetMovePoint = null;
+      } else {
+        const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, this.targetMovePoint.x, this.targetMovePoint.y);
+        moveX = Math.cos(angle) * speed;
+        moveY = Math.sin(angle) * speed;
+      }
+    }
+
+    body.setVelocity(moveX, moveY);
+    body.velocity.normalize().scale(speed);
+
+    // 2. Zone Detection & Animated Toast Banner
+    const pc = Math.floor(this.player.x / this.tileSize);
+    const pr = Math.floor(this.player.y / this.tileSize);
+    const currentZone = this.zones.find(z => pc >= z.minC && pc <= z.maxC && pr >= z.minR && pr <= z.maxR);
+    if (currentZone && currentZone.name !== this.currentZoneName) {
+      this.currentZoneName = currentZone.name;
+
+      const toast = this.add.text(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y - 120, `ENTERING ZONE: ${currentZone.name}`, {
+        fontFamily: 'Orbitron, sans-serif',
+        fontSize: '16px',
+        color: '#00f0ff',
+        fontStyle: 'bold',
+        backgroundColor: 'rgba(11, 15, 25, 0.8)',
+        padding: { x: 12, y: 6 }
+      }).setOrigin(0.5);
+
+      this.tweens.add({ targets: toast, y: this.cameras.main.midPoint.y - 150, alpha: 0, duration: 1800, onComplete: () => toast.destroy() });
+    }
+
+    // 3. AI Specter Evasion
+    this.undeadList.forEach(u => {
+      if (u.isCaptured) return;
+      if (u.isStunned) {
+        u.body.setVelocity(0);
+        return;
+      }
+      u.moveTimer += delta;
+      if (u.moveTimer > 200) {
+        u.moveTimer = 0;
+        const dist = Phaser.Math.Distance.Between(u.x, u.y, this.player.x, this.player.y);
+        if (dist < 260 && !this.isCamoActive) {
+          const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, u.x, u.y);
+          u.body.setVelocity(Math.cos(angle) * 170, Math.sin(angle) * 170);
+        }
+      }
+    });
+
+    // 4. High Knights AI Chase
+    this.highKnights.forEach(hk => {
+      hk.moveTimer += delta;
+      if (hk.moveTimer > 150) {
+        hk.moveTimer = 0;
+        const dist = Phaser.Math.Distance.Between(hk.x, hk.y, this.player.x, this.player.y);
+        if (dist < 320 && !this.isCamoActive) {
+          const angle = Phaser.Math.Angle.Between(hk.x, hk.y, this.player.x, this.player.y);
+          hk.body.setVelocity(Math.cos(angle) * 150, Math.sin(angle) * 150);
+        } else {
+          hk.body.setVelocity(0);
+        }
+      }
+    });
+
+    // 4.5. Lord General Boss Evasion AI
+    if (this.lordGeneral && this.lordGeneral.active) {
+      const dist = Phaser.Math.Distance.Between(this.lordGeneral.x, this.lordGeneral.y, this.player.x, this.player.y);
+      if (dist < 380 && !this.isCamoActive) {
+        const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, this.lordGeneral.x, this.lordGeneral.y);
+        this.lordGeneral.body.setVelocity(Math.cos(angle) * 215, Math.sin(angle) * 215);
+      } else {
+        this.lordGeneral.body.setVelocity(0);
+      }
+    }
+
+    // 5. Check Trap Collisions
+    this.traps.forEach(trap => {
+      if (!trap.active) return;
+      this.undeadList.forEach(u => {
+        if (!u.isCaptured && !u.isStunned) {
+          if (Phaser.Math.Distance.Between(trap.x, trap.y, u.x, u.y) < 28) {
+            this.triggerTrap(trap, u);
+          }
+        }
+      });
+      if (this.lordGeneral && this.lordGeneral.active) {
+        if (Phaser.Math.Distance.Between(trap.x, trap.y, this.lordGeneral.x, this.lordGeneral.y) < 32) {
+          this.triggerBossTrap(trap);
+        }
+      }
+    });
+
+    // 6. Update HUD Callback
+    if (this.hudCallback) {
+      const remainingUndead = this.undeadList.filter(u => !u.isCaptured).length;
+      this.hudCallback({
+        score: this.score,
+        heroHp: this.heroHp,
+        maxHeroHp: this.maxHeroHp,
+        multiplier: this.multiplier,
+        remainingSpecters: remainingUndead,
+        zoneName: this.currentZoneName,
+        generalsLeft: 5 - this.generalsDefeated
+      });
+    }
   }
 
   takeDamage(amount, cause) {

@@ -1142,7 +1142,7 @@ html, body {
 
 @media (min-width: 1025px) {
   .mobile-dpad-container {
-    display: none;
+    opacity: 0.9;
   }
 }
 
