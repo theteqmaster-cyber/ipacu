@@ -9,6 +9,7 @@ class AudioSynthesizer {
     this.bgmGain = null;
     this.bgmTimer = null;
     this.isBGMPlaying = false;
+    this.tempoMultiplier = 1.5; // Fast default gameplay tempo
   }
 
   init() {
@@ -26,24 +27,28 @@ class AudioSynthesizer {
     }
   }
 
+  setBGMTempo(multiplier) {
+    this.tempoMultiplier = multiplier;
+  }
+
   startBGM() {
     if (this.muted || !this.ctx || this.isBGMPlaying) return;
     this.isBGMPlaying = true;
 
     this.bgmGain = this.ctx.createGain();
-    this.bgmGain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+    this.bgmGain.gain.setValueAtTime(0.09, this.ctx.currentTime);
     this.bgmGain.connect(this.ctx.destination);
 
-    // Horror Violin Melody Notes (D minor / Dissonant Minor 2nds & Trills)
+    // Fast-Paced Horror Violin & Percussive Beat Pattern
     const melody = [
-      { note: 293.66, dur: 0.8 }, // D4
-      { note: 311.13, dur: 0.8 }, // Eb4 (dissonant horror interval)
-      { note: 369.99, dur: 1.2 }, // F#4
-      { note: 349.23, dur: 0.6 }, // F4
-      { note: 277.18, dur: 1.4 }, // C#4
-      { note: 293.66, dur: 1.0 }, // D4
-      { note: 220.00, dur: 0.8 }, // A3
-      { note: 233.08, dur: 1.2 }, // Bb3
+      { note: 293.66, dur: 0.35 }, // D4 fast
+      { note: 311.13, dur: 0.35 }, // Eb4
+      { note: 369.99, dur: 0.45 }, // F#4
+      { note: 349.23, dur: 0.30 }, // F4
+      { note: 277.18, dur: 0.50 }, // C#4
+      { note: 293.66, dur: 0.40 }, // D4
+      { note: 220.00, dur: 0.35 }, // A3
+      { note: 233.08, dur: 0.45 }, // Bb3
     ];
 
     let noteIdx = 0;
@@ -52,6 +57,8 @@ class AudioSynthesizer {
 
       const item = melody[noteIdx];
       noteIdx = (noteIdx + 1) % melody.length;
+      const actualDur = item.dur / (this.tempoMultiplier || 1.5);
+      const now = this.ctx.currentTime;
 
       // 1. Sawtooth Violin Oscillator
       const osc = this.ctx.createOscillator();
@@ -60,24 +67,21 @@ class AudioSynthesizer {
       // 2. Vibrato LFO for Horror Violin weeping effect
       const lfo = this.ctx.createOscillator();
       const lfoGain = this.ctx.createGain();
-      lfo.frequency.value = 6; // 6Hz vibrato
-      lfoGain.gain.value = item.note * 0.025; // pitch bend depth
+      lfo.frequency.value = 8 * this.tempoMultiplier; // Fast vibrato
+      lfoGain.gain.value = item.note * 0.03;
       lfo.connect(osc.frequency);
 
       osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(item.note, this.ctx.currentTime);
+      osc.frequency.setValueAtTime(item.note, now);
 
-      // Lowpass Filter for warm hollow string resonance
+      // Lowpass Filter
       const filter = this.ctx.createBiquadFilter();
       filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(1400, this.ctx.currentTime);
+      filter.frequency.setValueAtTime(1600, now);
 
-      // Envelope: Slow attack, expressive sustain, soft release
-      const now = this.ctx.currentTime;
       noteGain.gain.setValueAtTime(0.001, now);
-      noteGain.gain.exponentialRampToValueAtTime(0.18, now + 0.15);
-      noteGain.gain.exponentialRampToValueAtTime(0.08, now + item.dur * 0.7);
-      noteGain.gain.exponentialRampToValueAtTime(0.001, now + item.dur);
+      noteGain.gain.exponentialRampToValueAtTime(0.2, now + 0.04);
+      noteGain.gain.exponentialRampToValueAtTime(0.001, now + actualDur * 0.95);
 
       lfo.start(now);
       osc.connect(filter);
@@ -85,11 +89,26 @@ class AudioSynthesizer {
       noteGain.connect(this.bgmGain);
       osc.start(now);
 
-      lfo.stop(now + item.dur);
-      osc.stop(now + item.dur);
+      lfo.stop(now + actualDur);
+      osc.stop(now + actualDur);
 
-      // Schedule next note
-      this.bgmTimer = setTimeout(playNextViolinNote, item.dur * 900);
+      // 3. Fast Rhythmic Horror Percussive Bass Beat Drop (Kick + Sub Pulse)
+      const kickOsc = this.ctx.createOscillator();
+      const kickGain = this.ctx.createGain();
+      kickOsc.type = 'triangle';
+      kickOsc.frequency.setValueAtTime(120 * (this.tempoMultiplier > 2.0 ? 1.4 : 1.0), now);
+      kickOsc.frequency.exponentialRampToValueAtTime(35, now + 0.08);
+
+      kickGain.gain.setValueAtTime(0.3, now);
+      kickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+
+      kickOsc.connect(kickGain);
+      kickGain.connect(this.bgmGain);
+      kickOsc.start(now);
+      kickOsc.stop(now + 0.1);
+
+      // Schedule next fast note beat
+      this.bgmTimer = setTimeout(playNextViolinNote, actualDur * 1000);
     };
 
     playNextViolinNote();

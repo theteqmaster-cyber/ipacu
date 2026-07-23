@@ -68,6 +68,7 @@ export class GameScene extends Phaser.Scene {
     this.highKnights = [];
     this.traps = [];
     this.isMatchActive = true;
+    sound.setBGMTempo(1.5); // Fast gameplay horror beat default
 
     const worldW = this.worldWidthTiles * this.tileSize;
     const worldH = this.worldHeightTiles * this.tileSize;
@@ -148,6 +149,8 @@ export class GameScene extends Phaser.Scene {
 
           if (inChurch && !this.isChurchCorrupted) {
             this.isChurchCorrupted = true;
+            sound.setBGMTempo(2.4); // Accelerate to hyper-fast intense percussive horror beats!
+
             const toast = this.add.text(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y - 140, '⚠️ WARNING: LORD GENERAL HAS CORRUPTED THE HOLY CHURCH!\nSAINT SPAWNING HIGH KNIGHT PAIRS EVERY 3s!', {
               fontFamily: 'Orbitron, sans-serif',
               fontSize: '15px',
