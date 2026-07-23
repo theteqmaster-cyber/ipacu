@@ -20,6 +20,19 @@ class GroqAIService {
       return this.cache.get(cacheKey);
     }
 
+    const fallbacks = [
+      { commentary: "THE DEMON LORD SENSES YOUR PRESENCE IN THE LABYRINTH.", actionType: null },
+      { commentary: "HIGH KNIGHTS, DEFEND THE HOLY CHURCH AT ALL COSTS!", actionType: 'SUMMON_MINION' },
+      { commentary: "YOU MAY CAPTURE UNDEAD, HUNTER, BUT THE VOID AWAITS YOU.", actionType: null },
+      { commentary: "THE DARKNESS IN IPACU SURGES FOR YOUR XP!", actionType: 'AURA_SURGE' }
+    ];
+
+    if (!this.apiKey || this.apiKey.trim() === '' || this.apiKey === 'your_groq_api_key_here') {
+      const fb = fallbacks[Math.floor(Math.random() * fallbacks.length)];
+      this.cache.set(cacheKey, fb);
+      return fb;
+    }
+
     const prompt = `You are the sinister Demon Lord Puppet Master of Labyrinth Ipacu actively manipulating the labyrinth. 
 The Hunter (Player) is currently in zone: "${zone}" with ${playerXp} XP. ${generalsLeft} of your 5 Lord Generals remain standing.
 Current Event: ${eventType}.
@@ -49,26 +62,20 @@ Give a 1-sentence dramatic, sinister, tactical taunt or command to your High Kni
 
       const data = await response.json();
       const text = data.choices?.[0]?.message?.content?.trim() || "THE DEMON LORD WATCHES YOUR EVERY STEP IN THE DARKNESS.";
-      this.cache.set(cacheKey, text);
-
-      // Determine active Demon Lord puppet action based on event context
+      
       let actionType = null;
       if (zone === 'HOLY CHURCH (SAINT)' || zone === 'DARK VOID (LORD GENERAL)') {
         actionType = Math.random() > 0.4 ? 'SUMMON_MINION' : 'AURA_SURGE';
       }
 
-      return { commentary: text, actionType };
+      const result = { commentary: text, actionType };
+      this.cache.set(cacheKey, result);
+      return result;
 
     } catch (e) {
       console.warn('Groq AI fallback:', e);
-      // Sinister fallback responses with dynamic actions
-      const fallbacks = [
-        { commentary: "THE DEMON LORD SENSES YOUR PRESENCE IN THE LABYRINTH.", actionType: null },
-        { commentary: "HIGH KNIGHTS, DEFEND THE HOLY CHURCH AT ALL COSTS!", actionType: 'SUMMON_MINION' },
-        { commentary: "YOU MAY CAPTURE UNDEAD, HUNTER, BUT THE VOID AWAITS YOU.", actionType: null },
-        { commentary: "THE DARKNESS IN IPACU SURGES FOR YOUR XP!", actionType: 'AURA_SURGE' }
-      ];
-      return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+      const fb = fallbacks[Math.floor(Math.random() * fallbacks.length)];
+      return fb;
     }
   }
 }

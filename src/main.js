@@ -269,9 +269,10 @@ class AppManager {
       playerXp: storage.profile.totalXp,
       generalsLeft: 5,
       eventType: 'HUNTER_ENTERING_LABYRINTH'
-    }).then(commentary => {
+    }).then(res => {
+      const text = typeof res === 'string' ? res : (res && res.commentary ? res.commentary : '');
       const aiTextEl = document.getElementById('groq-ai-text');
-      if (aiTextEl) aiTextEl.innerText = `"${commentary}"`;
+      if (aiTextEl && text) aiTextEl.innerText = `"${text}"`;
     });
 
     setTimeout(() => { warpBar.style.width = '50%'; warpAiStatus.innerText = 'SYNCHRONIZING MAZE TOPOLOGY...'; }, 500);
@@ -366,11 +367,11 @@ class AppManager {
         generalsLeft: generalsLeft !== undefined ? generalsLeft : 5,
         eventType: `HUNTER_ENTERED_${zoneName.replace(/ /g, '_')}`
       }).then(res => {
-        const commentary = typeof res === 'string' ? res : res.commentary;
-        const actionType = typeof res === 'object' ? res.actionType : null;
+        const commentary = typeof res === 'string' ? res : (res && res.commentary ? res.commentary : '');
+        const actionType = typeof res === 'object' && res ? res.actionType : null;
 
         const aiTextEl = document.getElementById('groq-ai-text');
-        if (aiTextEl) aiTextEl.innerText = `"${commentary}"`;
+        if (aiTextEl && commentary) aiTextEl.innerText = `"${commentary}"`;
 
         if (actionType && this.gameScene) {
           this.gameScene.triggerDemonLordAction(actionType);
